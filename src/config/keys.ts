@@ -15,6 +15,7 @@ const ENV_VARS: Envspec[] = [
   { key: "DATABASE_URL", required: true },
   { key: "DATABASE_NAME", required: true },
   { key: "CLIENT_URL", required: true },
+  { key: "FRONTEND_URL", required: true },
   { key: "SERVER_URL", required: true },
   { key: "SESSION_SECRET", required: true },
   { key: "LOG_LEVEL", required: true },

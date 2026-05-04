@@ -1,11 +1,12 @@
-import User from "src/models/user.js";
+import User from "src/models/user.model.js";
 import Otp from "src/models/otp.js";
 import { Request, Response, NextFunction } from "express";
 import tryCatchWrapper from "src/lib/tryCatchWrapper.js";
 import { sendTsRestError, sendTsRestSuccess } from "src/lib/responseHandler.js";
-import { sendOtpEmail } from "src/lib/email.js";
+import { sendOtpEmail, sendWelcomeEmail } from "src/lib/email.js";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
+import { env } from "src/config/keys.js";
 
 //generate a cryptographically random 6 digit OTP
 const generateOtp = (): string => {
@@ -41,14 +42,137 @@ export const registerUser = tryCatchWrapper(
       phone,
       password: hashPassword,
     });
+    const otp = generateOtp();
+    const hashedOtp = await hashOtp(otp);
+
+    // Save the OTP to your database
+    await Otp.create({
+      email,
+      otp: hashedOtp,
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10-minute expiry
+    });
+
+    // Dynamic verification link for your teammate's local environment
+    const frontendUrl = env.FRONTEND_URL || "http://localhost:4500";
+    const verificationLink = `${frontendUrl}/auth/verify-Account?email=${encodeURIComponent(email)}`;
+
+    // Send the email
+    const emailSent = await sendWelcomeEmail(
+      email,
+      `${firstName} ${lastName}`,
+      otp,
+      verificationLink,
+    );
+
+    if (!emailSent) {
+      // Logic choice: You could delete the user here if email fails,
+      // but usually it's better to let them try "Resend OTP" later.
+      return sendTsRestError(
+        res,
+        500,
+        "User created but failed to send verification email.",
+      );
+    }
     //save session of user
     req.session.userId = newUser._id.toString();
     req.session.role = "client";
     return sendTsRestSuccess(res, 201, {
-      message: "User registered successfully",
+      message:
+        "User registered successfully. Please check your email for a verification code.",
       data: {
         _id: newUser._id,
+        email: newUser.email,
       },
+    });
+  },
+);
+
+export const verifyAccount = tryCatchWrapper(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { email } = req.query;
+    const { otp } = req.body;
+
+    if (!email) {
+      return sendTsRestError(res, 400, "Email parameter is missing.");
+    }
+
+    const otpRecord = await Otp.findOne({ email });
+    if (!otpRecord) {
+      return sendTsRestError(res, 400, "Code not found or expired.");
+    }
+
+    const isOtpValid = await bcrypt.compare(otp, otpRecord.otp);
+    if (!isOtpValid) {
+      return sendTsRestError(res, 400, "Invalid verification code.");
+    }
+
+    // Update the user to verified
+    await User.findOneAndUpdate({ email }, { emailVerified: true });
+    await Otp.deleteMany({ email });
+
+    return sendTsRestSuccess(res, 200, {
+      message: "Account verified successfully!",
+    });
+  },
+);
+
+export const resendVerifyAccountOtp = tryCatchWrapper(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { email } = req.body;
+
+    // 1. Verify the user exists
+    const user = await User.findOne({ email }).lean();
+    if (!user) {
+      // Return success to prevent email enumeration, same as forgotPassword
+      return sendTsRestSuccess(res, 200, {
+        message:
+          "If an account with that email exists, a new OTP has been sent",
+      });
+    }
+    // Construct the verification link
+    // encodeURIComponent ensures special characters in the email don't break the URL
+    const frontendUrl = env.FRONTEND_URL || "http://localhost:4500";
+    const verificationLink = `${frontendUrl}/auth/verify-Account?email=${encodeURIComponent(email)}`;
+
+    // 2. Rate Limiting Check
+    // Check if an OTP was sent very recently
+    const existingOtp = await Otp.findOne({ email });
+    if (existingOtp && Date.now() - existingOtp.createdAt.getTime() < 60000) {
+      return sendTsRestError(
+        res,
+        429,
+        "Please wait 60 seconds before requesting a new OTP",
+      );
+    }
+
+    // 3. Delete any existing OTP for this email
+    await Otp.deleteMany({ email });
+
+    // 4. Generate + Hash new OTP
+    const otp = generateOtp();
+    const hashedOtp = await hashOtp(otp);
+
+    // 5. Store new hashed OTP
+    await Otp.create({
+      email,
+      otp: hashedOtp,
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      attempts: 0, // Reset attempts for the new code
+    });
+
+    const emailSent = await sendWelcomeEmail(
+      email,
+      `${user.firstName} ${user.lastName}`,
+      otp,
+      verificationLink,
+    );
+
+    if (!emailSent) {
+      return sendTsRestError(res, 500, "Failed to send OTP. Please try again");
+    }
+
+    return sendTsRestSuccess(res, 200, {
+      message: "A new OTP has been sent to your email",
     });
   },
 );
@@ -113,6 +237,11 @@ export const forgotPassword = tryCatchWrapper(
     const { email } = req.body;
     const user = await User.findOne({ email }).lean();
 
+    // Construct the verification link
+    // encodeURIComponent ensures special characters in the email don't break the URL
+    const frontendUrl = env.FRONTEND_URL || "http://localhost:4500";
+    const verificationLink = `${frontendUrl}/auth/verify-otp?email=${encodeURIComponent(email)}`;
+
     //always return success even if user doesnt exist to prevent email enumeration attacks
     if (!user) {
       return sendTsRestSuccess(res, 200, {
@@ -136,8 +265,9 @@ export const forgotPassword = tryCatchWrapper(
     //send OTP via email
     const emailSent = await sendOtpEmail(
       email,
-      `${user.firstName} $ {user.lastName}`,
+      `${user.firstName} ${user.lastName}`,
       otp,
+      verificationLink,
     );
     if (!emailSent) {
       return sendTsRestError(
@@ -151,10 +281,82 @@ export const forgotPassword = tryCatchWrapper(
     });
   },
 );
-//verify OTP
-export const verifyOtp = tryCatchWrapper(
+
+export const resendOtp = tryCatchWrapper(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { email, otp } = req.body;
+    const { email } = req.body;
+
+    // 1. Verify the user exists
+    const user = await User.findOne({ email }).lean();
+    if (!user) {
+      // Return success to prevent email enumeration, same as forgotPassword
+      return sendTsRestSuccess(res, 200, {
+        message:
+          "If an account with that email exists, a new OTP has been sent",
+      });
+    }
+    // Construct the verification link
+    // encodeURIComponent ensures special characters in the email don't break the URL
+    const frontendUrl = env.FRONTEND_URL || "http://localhost:4500";
+    const verificationLink = `${frontendUrl}/auth/verify-otp?email=${encodeURIComponent(email)}`;
+
+    // 2. Rate Limiting Check
+    // Check if an OTP was sent very recently
+    const existingOtp = await Otp.findOne({ email });
+    if (existingOtp && Date.now() - existingOtp.createdAt.getTime() < 60000) {
+      return sendTsRestError(
+        res,
+        429,
+        "Please wait 60 seconds before requesting a new OTP",
+      );
+    }
+
+    // 3. Delete any existing OTP for this email
+    await Otp.deleteMany({ email });
+
+    // 4. Generate + Hash new OTP
+    const otp = generateOtp();
+    const hashedOtp = await hashOtp(otp);
+
+    // 5. Store new hashed OTP
+    await Otp.create({
+      email,
+      otp: hashedOtp,
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      attempts: 0, // Reset attempts for the new code
+    });
+
+    const emailSent = await sendOtpEmail(
+      email,
+      `${user.firstName} ${user.lastName}`,
+      otp,
+      verificationLink,
+    );
+
+    if (!emailSent) {
+      return sendTsRestError(res, 500, "Failed to send OTP. Please try again");
+    }
+
+    return sendTsRestSuccess(res, 200, {
+      message: "A new OTP has been sent to your email",
+    });
+  },
+);
+
+export const verifyForgotPasswordOtp = tryCatchWrapper(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { email } = req.query;
+    const { otp } = req.body;
+
+    // Safety check for the URL parameter
+    if (!email) {
+      return sendTsRestError(
+        res,
+        400,
+        "Email parameter is missing from the URL.",
+      );
+    }
+
     const otpRecord = await Otp.findOne({ email });
     if (!otpRecord) {
       return sendTsRestError(res, 400, "OTP not found or has expired");
@@ -189,7 +391,7 @@ export const verifyOtp = tryCatchWrapper(
       );
     }
     //OTP is valid-store verified email in session for the reset step
-    req.session.resetEmail = email;
+    req.session.resetEmail = email as string;
 
     //clean up OTP
     await Otp.deleteMany({ email });
@@ -202,20 +404,12 @@ export const verifyOtp = tryCatchWrapper(
 //Reset Password
 export const resetPassword = tryCatchWrapper(
   async (req: Request, res: Response, next: NextFunction) => {
+    const { email } = req.query;
     const { newPassword, confirmPassword } = req.body;
-    //ensure OTP was verified in this session
-    const resetEmail = req.session.resetEmail;
-    if (!resetEmail) {
-      return sendTsRestError(
-        res,
-        403,
-        "Session expired or OTP not verified.Please restart the process again",
-      );
-    }
     if (newPassword !== confirmPassword) {
       return sendTsRestError(res, 400, "Passwords do not match");
     }
-    const user = await User.findOne({ email: resetEmail }).select("+password");
+    const user = await User.findOne({ email }).select("+password");
     if (!user) {
       return sendTsRestError(res, 404, "User not found");
     }
@@ -234,10 +428,45 @@ export const resetPassword = tryCatchWrapper(
     user.password = hashPassword;
     await user.save();
 
-    //clear resetEmail from session
-    delete req.session.resetEmail;
     return sendTsRestSuccess(res, 200, {
       message: "Password reset successfully. You can now log in",
+    });
+  },
+);
+
+export const deleteAccount = tryCatchWrapper(
+  async (req: Request, res: Response, next: NextFunction) => {
+    // 1. Identify the user from the session
+    const userId = req.session.userId;
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return sendTsRestError(res, 404, "User not found or already deleted");
+    }
+
+    // 2. Clean up associated data
+    // Delete any pending OTPs for this user's email
+    await Otp.deleteMany({ email: user.email });
+
+    // 3. Delete the User from the database
+    await User.findByIdAndDelete(userId);
+
+    // 4. Destroy the session and clear the cookie
+    req.session.destroy((err) => {
+      if (err) {
+        return sendTsRestError(
+          res,
+          500,
+          "Account deleted, but failed to clear session.",
+        );
+      }
+
+      res.clearCookie("sessionId"); // Ensure this matches your session config name
+
+      return sendTsRestSuccess(res, 200, {
+        message:
+          "Account and all associated data have been deleted successfully.",
+      });
     });
   },
 );

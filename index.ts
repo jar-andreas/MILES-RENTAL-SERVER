@@ -40,9 +40,15 @@ app.set("trust proxy", 1);
 setupGlobalErrorHandlers();
 
 // CORS configuration
-const allowedOrigins = [env.CLIENT_URL];
+const allowedOrigins = [
+  env.CLIENT_URL,
+  "https://earthling-occupant-vagrancy.ngrok-free.dev",
+  "http://localhost:4500",
+];
 if (env.NODE_ENV === "production" && env.CLIENT_URL) {
-  allowedOrigins.push(env.CLIENT_URL);
+  if (!allowedOrigins.includes(env.CLIENT_URL)) {
+    allowedOrigins.push(env.CLIENT_URL);
+  }
 }
 
 const corsOptions: cors.CorsOptions = {
@@ -59,6 +65,7 @@ const corsOptions: cors.CorsOptions = {
   allowedHeaders: [
     "Content-Type",
     "Authorization",
+    "ngrok-skip-browser-warning",
     "Access-Control-Allow-Origin",
     "Access-Control-Allow-Credentials",
   ],
@@ -71,7 +78,7 @@ const corsOptions: cors.CorsOptions = {
 };
 
 //rate limit
-app.use(globalLimiter)
+app.use(globalLimiter);
 //Pino HTTP middleware for request logging
 app.use(createExpressLogger());
 app.use(cors(corsOptions));
