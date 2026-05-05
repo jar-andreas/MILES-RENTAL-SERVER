@@ -21,6 +21,9 @@ const ENV_VARS: Envspec[] = [
   { key: "LOG_LEVEL", required: true },
   { key: "BREVO_API_KEY", required: true },
   { key: "EMAIL_OWNER", required: true },
+  { key: "CLOUDINARY_CLOUD_NAME", required: true },
+  { key: "CLOUDINARY_API_KEY", required: true },
+  { key: "CLOUDINARY_API_SECRET_KEY", required: true },
 ];
 
 interface Env {
