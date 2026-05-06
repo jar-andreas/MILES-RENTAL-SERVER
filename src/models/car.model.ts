@@ -55,40 +55,6 @@ const CarSchema = new Schema<UserCar>(
     imageUrl: {
       type: String,
       required: true,
-    rating: { type: Number, default: 5 },
-    tripsCount: { type: Number, default: 0 },
-    transmission: {
-      type: String,
-      required: true,
-      enum: ["AUTO", "MANUAL"],
-      uppercase: true,
-    },
-    features: {
-      type: [String],
-      default: [
-        "Comprehensive insurance",
-        "24/7 road support",
-        "Free Cancellation",
-        "Unlimited mileage in-city",
-        "Sanitize between trips",
-        "Full tank at pickup",
-      ],
-    },
-    image: [
-      {
-        url: { type: String, required: true },
-        public_id: { type: String, required: true },
-      },
-    ],
-    carSpecs: {
-      engine: String,
-      topSpeed: String,
-      mileage: String,
-      boot: String,
-    },
-    slug: {
-      type: String,
-      unique: true,
     },
   },
   {
