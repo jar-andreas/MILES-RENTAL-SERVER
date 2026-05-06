@@ -7,7 +7,6 @@ import Car from "../models/car.model.js";
 import tryCatchWrapper from "src/lib/tryCatchWrapper.js";
 import { sendTsRestError, sendTsRestSuccess } from "src/lib/responseHandler.js";
 
-
 interface ICarImage {
   url: string;
   public_id: string;
@@ -25,7 +24,7 @@ export const createCar = tryCatchWrapper(
       pricePerDay,
       seats,
       fuelType,
-      ratings,
+      rating,
       tripsCount,
       slug,
       transmission,
@@ -72,7 +71,7 @@ export const createCar = tryCatchWrapper(
       fuelType,
       transmission,
       features,
-      ratings,
+      rating,
       tripsCount,
       carSpecs,
       image: uploadedImages,
@@ -87,7 +86,10 @@ export const createCar = tryCatchWrapper(
       );
     }
 
-    return sendTsRestSuccess(res, 201, car);
+    return sendTsRestSuccess(res, 201, {
+      message: "Car created successfully",
+      data: car,
+    });
   },
 );
 
@@ -105,8 +107,8 @@ export const deleteCar = tryCatchWrapper(
 
     // 3. Clean up Cloudinary images
     if (car.image && car.image.length > 0) {
-      const deletePromises = car.image.map((img: ICarImage) => 
-        deleteFromCloudinary(img.public_id)
+      const deletePromises = car.image.map((img: ICarImage) =>
+        deleteFromCloudinary(img.public_id),
       );
       await Promise.all(deletePromises);
     }
@@ -115,5 +117,56 @@ export const deleteCar = tryCatchWrapper(
     await Car.findOneAndDelete({ slug });
 
     return sendTsRestSuccess(res, 200, { message: "Car deleted successfully" });
-  }
+  },
 );
+
+export const getAllCars = tryCatchWrapper(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { brand, category, sort } = req.query;
+    const filter: any = {};
+    if (brand) {
+      filter.brand = { $regex: brand, $options: "i" };
+    }
+
+    if (category) {
+      filter.category = { $regex: category, $options: "i" };
+    }
+
+    const cars = await Car.find(filter).sort(
+      sort ? { [sort as string]: 1 } : { createdAt: -1 },
+    );
+    if (!cars || cars.length === 0) {
+      return sendTsRestError(
+        res,
+        200,
+        "No vehicles found matching your criteria",
+      );
+    }
+    return sendTsRestSuccess(res, 200, {
+      count: cars.length,
+      data: cars,
+    });
+  },
+);
+
+// GET /api/cars/:slug
+export const getSingleCar = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  if (!req.session.userId) {
+    res
+      .status(401)
+      .json({ success: false, message: "Unauthorized. Please log in." });
+    return;
+  }
+
+  const car = await Car.findOne({ slug: req.params.slug });
+
+  if (!car) {
+    res.status(404).json({ success: false, message: "Car not found" });
+    return;
+  }
+
+  res.status(200).json({ success: true, data: car });
+};

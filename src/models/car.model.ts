@@ -97,13 +97,14 @@ const CarSchema = new Schema<UserCar>(
       type: String,
       required: true,
       enum: ["Auto", "Manual", "Hybrid"],
-      uppercase: true,
     },
     features: {
       type: [String],
       default: [
         "Comprehensive insurance",
         "24/7 road support",
+        "Lexus Safety System+ 4.0",
+        "Mark Levinson 17-speaker PurePlay Sound",
         "Free Cancellation",
         "Unlimited mileage in-city",
         "Sanitize between trips",
@@ -140,9 +141,7 @@ const CarSchema = new Schema<UserCar>(
 );
 
 CarSchema.index({ brand: 1 });
-CarSchema.index({ slug: 1 });
 CarSchema.index({ category: 1 });
-CarSchema.index({ segment: 1 });
 CarSchema.index({ pricePerDay: 1 });
 
 const Car =
