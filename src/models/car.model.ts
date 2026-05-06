@@ -3,22 +3,24 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface UserCar extends Document {
   brand: string;
   description: string;
-  segment:
-    | "EXECUTIVE"
-    | "LOGISTICS"
-    | "FAMILY"
+  category: "LUXURY" | "SEDAN" | "SUV" | "TRUCK";
+  tags: (
     | "CITY"
+    | "BEST SELLER"
+    | "ECONOMY"
     | "PREMIUM"
-    | "ELECTRIC";
-  tags: ("CITY" | "BEST SELLER" | "ECONOMY" | "POPULAR")[]; // ["BEST SELLER", "ECONOMY"]
-  category: string;
+    | "LOGISTICS"
+    | "EXECUTIVE"
+    | "FAMILY"
+    | "ELECTRIC"
+  )[];
   modelName: string;
   year: number;
   pricePerDay: number;
   seats: number;
   fuelType: string;
   features: string[];
-  transmission: "Auto" | "Manual" | string;
+  transmission: "Auto" | "Manual" | "Hybrid" | string;
   image: {
     url: string;
     public_id: string;
@@ -47,17 +49,11 @@ const CarSchema = new Schema<UserCar>(
       trim: true,
       maxlength: [1000, "Description cannot exceed 1000 characters"],
     },
-    segment: {
-      type: String,
-      required: true,
-      uppercase: true,
-      enum: ["EXECUTIVE", "LOGISTICS", "FAMILY", "CITY", "PREMIUM", "ELECTRIC"],
-    },
     category: {
       type: String,
       required: true,
-      trim: true,
       uppercase: true,
+      enum: ["LUXURY", "SEDAN", "SUV", "TRUCK"],
     },
     modelName: {
       type: String,
@@ -69,8 +65,16 @@ const CarSchema = new Schema<UserCar>(
       type: [String],
       required: true,
       uppercase: true,
-      enum: ["CITY", "BEST SELLER", "ECONOMY", "POPULAR"],
-      default: ["POPULAR"],
+      enum: [
+        "CITY",
+        "BEST SELLER",
+        "ECONOMY",
+        "LOGISTICS",
+        "PREMIUM",
+        "FAMILY",
+        "EXECUTIVE",
+        "ELECTRIC",
+      ],
     },
     pricePerDay: {
       type: Number,
@@ -92,7 +96,7 @@ const CarSchema = new Schema<UserCar>(
     transmission: {
       type: String,
       required: true,
-      enum: ["AUTO", "MANUAL"],
+      enum: ["Auto", "Manual", "Hybrid"],
       uppercase: true,
     },
     features: {
@@ -104,6 +108,11 @@ const CarSchema = new Schema<UserCar>(
         "Unlimited mileage in-city",
         "Sanitize between trips",
         "Full tank at pickup",
+        "Autopilot",
+        "Panoramic Roof",
+        "Premium Audio",
+        "Heated Seats",
+        "Wireless Charging",
       ],
     },
     image: [
