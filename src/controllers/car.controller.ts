@@ -1,43 +1,23 @@
-import { uploadToCloudinary } from "src/lib/cloudinary.js";
-import { deleteFromCloudinary } from "src/lib/cloudinary.js";
-import { Request, Response } from "express";
+import {
+  uploadToCloudinary,
+  deleteFromCloudinary,
+} from "src/lib/cloudinary.js";
+import { NextFunction, Request, Response } from "express";
 import Car from "../models/car.model.js";
 import tryCatchWrapper from "src/lib/tryCatchWrapper.js";
+import { sendTsRestError, sendTsRestSuccess } from "src/lib/responseHandler.js";
 
-type CreateCarBody = {
-  brand: string;
-  description: string;
-  segment:
-    | "EXECUTIVE"
-    | "LOGISTICS"
-    | "FAMILY"
-    | "CITY"
-    | "PREMIUM"
-    | "ELECTRIC";
-  category: string;
-  modelName: string;
-  year: number;
-  tags: ("CITY" | "BEST SELLER" | "ECONOMY" | "POPULAR")[];
-  pricePerDay: number;
-  seats: number;
-  fuelType: string;
-  transmission: "AUTO" | "MANUAL";
-  features?: string[];
-  carSpecs?: {
-    engine?: string;
-    topSpeed?: string;
-    mileage?: string;
-    boot?: string;
-  };
-  image: string[];
-};
+
+interface ICarImage {
+  url: string;
+  public_id: string;
+}
 
 export const createCar = tryCatchWrapper(
-  async (req: Request<{}, {}, CreateCarBody>, res: Response) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     const {
       brand,
       description,
-      segment,
       category,
       modelName,
       year,
@@ -45,31 +25,44 @@ export const createCar = tryCatchWrapper(
       pricePerDay,
       seats,
       fuelType,
+      ratings,
+      tripsCount,
+      slug,
       transmission,
       features,
       carSpecs,
-      image,
+      images,
     } = req.body;
 
-    const uploadedImages: { url: string; public_id: string }[] = [];
+    const uploadPromises = (images ?? []).map((img: string) =>
+      uploadToCloudinary(img),
+    );
 
-    for (const img of image ?? []) {
-      const result = await uploadToCloudinary(img);
+    const cloudinaryResults = await Promise.all(uploadPromises);
 
-      uploadedImages.push({
-        url: result.url,
-        public_id: result.public_id,
-      });
-    }
+    const uploadedImages = cloudinaryResults.map((result) => ({
+      url: result.secure_url || result.url,
+      public_id: result.public_id,
+    }));
 
-    const slug = `${brand}-${modelName}-${year}`
+    const finalSlug = (slug || `${brand}-${modelName}-${year}`)
       .toLowerCase()
-      .replace(/\s+/g, "-");
+      .trim()
+      .replace(/\s+/g, "-") // Replaces spaces with dashes
+      .replace(/[^\w\-]+/g, "");
+
+    const existingCar = await Car.findOne({ slug: finalSlug });
+    if (existingCar) {
+      return sendTsRestError(
+        res,
+        400,
+        "A car with this custom slug already exists",
+      );
+    }
 
     const car = await Car.create({
       brand,
       description,
-      segment,
       category,
       modelName,
       year,
@@ -79,42 +72,48 @@ export const createCar = tryCatchWrapper(
       fuelType,
       transmission,
       features,
+      ratings,
+      tripsCount,
       carSpecs,
       image: uploadedImages,
-      slug,
+      slug: finalSlug,
     });
 
-    return res.status(201).json({
-      success: true,
-      data: car,
-    });
-  }
+    if (!car) {
+      return sendTsRestError(
+        res,
+        500,
+        "Failed to create car record in database",
+      );
+    }
+
+    return sendTsRestSuccess(res, 201, car);
+  },
 );
 
 export const deleteCar = tryCatchWrapper(
   async (req: Request, res: Response) => {
-    const { id } = req.params as { id: string };
+    // 1. Destructure slug instead of id
+    const { slug } = req.params as { slug: string };
 
-    const car = await Car.findById(id);
+    // 2. Use findOne with the slug
+    const car = await Car.findOne({ slug });
 
     if (!car) {
-      return res.status(404).json({
-        success: false,
-        message: "Car not found",
-      });
+      return sendTsRestError(res, 404, "Car not found");
     }
 
+    // 3. Clean up Cloudinary images
     if (car.image && car.image.length > 0) {
-      for (const img of car.image) {
-        await deleteFromCloudinary(img.public_id);
-      }
+      const deletePromises = car.image.map((img: ICarImage) => 
+        deleteFromCloudinary(img.public_id)
+      );
+      await Promise.all(deletePromises);
     }
 
-    await Car.findByIdAndDelete(id);
+    // 4. Delete from DB using the slug
+    await Car.findOneAndDelete({ slug });
 
-    return res.status(200).json({
-      success: true,
-      message: "Car deleted successfully",
-    });
+    return sendTsRestSuccess(res, 200, { message: "Car deleted successfully" });
   }
 );
