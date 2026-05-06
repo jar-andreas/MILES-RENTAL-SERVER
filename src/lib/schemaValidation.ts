@@ -115,7 +115,7 @@ export const validateResetPasswordSchema = z.object({
 });
 
 export const validateContactUsSchema = z.object({
-  fullname: z
+  fullName: z
     .string()
     .trim()
     .min(2, { message: "Full name must be at least 2 characters" })

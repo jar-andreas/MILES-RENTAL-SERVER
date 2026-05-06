@@ -12,6 +12,7 @@ import {
 } from "src/middleware/error.middleware.js";
 import { createSessionMiddleware } from "./src/config/session.js";
 import userRoutes from "./src/routes/user.routes.js";
+import contactRoutes from "./src/routes/contactUs.routes.js";
 import { globalLimiter } from "src/middleware/rateLimit.middelware.js";
 
 declare global {
@@ -133,6 +134,7 @@ app.get("/session", (req: Request, res: Response) => {
 });
 
 app.use("/api/v1/user", userRoutes);
+app.use("/api/v1/contact", contactRoutes);
 
 // Handle 404
 app.use(notFoundRoutes);
