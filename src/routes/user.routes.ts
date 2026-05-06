@@ -18,9 +18,7 @@ import {
   validateLoginUser,
   validateSignUpSchema,
   validateForgotPasswordSchema,
-  validateVerifyOtpSchema,
   validateResetPasswordSchema,
-  validateResendOtpSchema,
 } from "src/lib/schemaValidation.js";
 import { validateFormData } from "src/middleware/formValidate.js";
 
