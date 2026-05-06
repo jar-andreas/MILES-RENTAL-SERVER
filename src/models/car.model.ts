@@ -21,7 +21,7 @@ export interface UserCar extends Document {
   fuelType: string;
   features: string[];
   transmission: "Auto" | "Manual" | "Hybrid" | string;
-  image: {
+  images: {
     url: string;
     public_id: string;
   }[];
@@ -115,7 +115,7 @@ const CarSchema = new Schema<UserCar>(
         "Wireless Charging",
       ],
     },
-    image: [
+    images: [
       {
         url: { type: String, required: true },
         public_id: { type: String, required: true },
