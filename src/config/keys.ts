@@ -23,7 +23,7 @@ const ENV_VARS: Envspec[] = [
   { key: "EMAIL_OWNER", required: true },
   { key: "CLOUDINARY_CLOUD_NAME", required: true },
   { key: "CLOUDINARY_API_KEY", required: true },
-  { key: "CLOUDINARY_API_SECRET_KEY", required: true },
+  { key: "CLOUDINARY_API_SECRET", required: true },
 ];
 
 interface Env {

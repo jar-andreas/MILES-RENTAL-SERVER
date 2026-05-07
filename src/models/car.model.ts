@@ -3,33 +3,35 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface UserCar extends Document {
   brand: string;
   description: string;
-  segment:
-    | "EXECUTIVE"
-    | "LOGISTICS"
-    | "FAMILY"
+  category: "LUXURY" | "SEDAN" | "SUV" | "TRUCK";
+  tags: (
     | "CITY"
+    | "BEST SELLER"
+    | "ECONOMY"
     | "PREMIUM"
-    | "ELECTRIC";
-  tags: ("CITY" | "BEST SELLER" | "ECONOMY" | "POPULAR")[]; // ["BEST SELLER", "ECONOMY"]
-  category: string;
+    | "LOGISTICS"
+    | "EXECUTIVE"
+    | "FAMILY"
+    | "ELECTRIC"
+  )[];
   modelName: string;
   year: number;
   pricePerDay: number;
   seats: number;
   fuelType: string;
   features: string[];
-  transmission: "Auto" | "Manual" | string;
-  image: {
+  transmission: "Auto" | "Manual" | "Hybrid" | string;
+  images: {
     url: string;
     public_id: string;
   }[];
   rating: number;
   tripsCount: number;
   carSpecs: {
-    engine: string; // 3.5L V6
-    topSpeed: string; // 230 km/h
-    mileage: string; // 22 km/L
-    boot: string; // 454 L
+    engine: string;
+    topSpeed: string;
+    mileage: string;
+    boot: string; //
   };
   slug: string;
 }
@@ -47,17 +49,11 @@ const CarSchema = new Schema<UserCar>(
       trim: true,
       maxlength: [1000, "Description cannot exceed 1000 characters"],
     },
-    segment: {
-      type: String,
-      required: true,
-      uppercase: true,
-      enum: ["EXECUTIVE", "LOGISTICS", "FAMILY", "CITY", "PREMIUM", "ELECTRIC"],
-    },
     category: {
       type: String,
       required: true,
-      trim: true,
       uppercase: true,
+      enum: ["LUXURY", "SEDAN", "SUV", "TRUCK"],
     },
     modelName: {
       type: String,
@@ -69,8 +65,16 @@ const CarSchema = new Schema<UserCar>(
       type: [String],
       required: true,
       uppercase: true,
-      enum: ["CITY", "BEST SELLER", "ECONOMY", "POPULAR"],
-      default: ["POPULAR"],
+      enum: [
+        "CITY",
+        "BEST SELLER",
+        "ECONOMY",
+        "LOGISTICS",
+        "PREMIUM",
+        "FAMILY",
+        "EXECUTIVE",
+        "ELECTRIC",
+      ],
     },
     pricePerDay: {
       type: Number,
@@ -92,21 +96,27 @@ const CarSchema = new Schema<UserCar>(
     transmission: {
       type: String,
       required: true,
-      enum: ["AUTO", "MANUAL"],
-      uppercase: true,
+      enum: ["Auto", "Manual", "Hybrid"],
     },
     features: {
       type: [String],
       default: [
         "Comprehensive insurance",
         "24/7 road support",
+        "Lexus Safety System+ 4.0",
+        "Mark Levinson 17-speaker PurePlay Sound",
         "Free Cancellation",
         "Unlimited mileage in-city",
         "Sanitize between trips",
         "Full tank at pickup",
+        "Autopilot",
+        "Panoramic Roof",
+        "Premium Audio",
+        "Heated Seats",
+        "Wireless Charging",
       ],
     },
-    image: [
+    images: [
       {
         url: { type: String, required: true },
         public_id: { type: String, required: true },
@@ -121,6 +131,8 @@ const CarSchema = new Schema<UserCar>(
     slug: {
       type: String,
       unique: true,
+      lowercase: true,
+      required: true,
     },
   },
   {
@@ -131,9 +143,7 @@ const CarSchema = new Schema<UserCar>(
 );
 
 CarSchema.index({ brand: 1 });
-CarSchema.index({ slug: 1 });
 CarSchema.index({ category: 1 });
-CarSchema.index({ segment: 1 });
 CarSchema.index({ pricePerDay: 1 });
 
 const Car =
