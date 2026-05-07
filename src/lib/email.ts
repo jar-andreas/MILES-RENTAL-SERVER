@@ -1,5 +1,5 @@
-import { env } from "src/config/keys.js";
-import logger from "src/config/logger.js";
+import { env } from "../config/keys.js";
+import logger from "../config/logger.js";
 
 interface SendEmailOptions {
   to: string;
@@ -235,5 +235,37 @@ export const sendWelcomeEmail = async (
     subject: "Verify your Miles Car Rental Account",
     htmlContent,
     textContent: `Welcome to Miles! Your verification code is: ${otp}. Verify here: ${verificationLink}`,
+  });
+};
+
+// email.ts (Add this to your existing file)
+
+export const sendContactInquiry = async (
+  fullName: string,
+  clientEmail: string,
+  phone: string,
+  subject: string,
+  message: string,
+): Promise<boolean> => {
+  const htmlContent = `
+    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+      <h2 style="color: #F97316;">New Contact Inquiry</h2>
+      <p><strong>From:</strong> ${fullName}</p>
+      <p><strong>Client Email:</strong> ${clientEmail}</p>
+      <p><strong>Phone Number:</strong> ${phone}</p>
+      <p><strong>Subject:</strong> ${subject}</p>
+      <hr style="border: 0; border-top: 1px solid #eee;" />
+      <p><strong>Message:</strong></p>
+      <p style="background: #f9f9f9; padding: 15px; border-radius: 5px;">${message}</p>
+    </div>
+  `;
+
+  return sendEmail({
+    // env.EMAIL_OWNER is where you want to RECEIVE the inquiry
+    to: env.EMAIL_OWNER, 
+    toName: "Miles Admin",
+    subject: `Contact Form: ${subject}`,
+    htmlContent,
+    textContent: `New message from ${fullName} (${clientEmail}): ${message}`,
   });
 };

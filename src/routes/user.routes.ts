@@ -11,18 +11,16 @@ import {
   verifyAccount,
   deleteAccount,
   resendVerifyAccountOtp,
-} from "src/controllers/user.controller.js";
-import { customRateLimiter } from "src/middleware/rateLimit.middelware.js";
-import { isAuthenticated } from "src/middleware/auth.middleware.js";
+} from "../controllers/user.controller.js";
+import { customRateLimiter } from "../middleware/rateLimit.middelware.js";
+import { isAuthenticated } from "../middleware/auth.middleware.js";
 import {
   validateLoginUser,
   validateSignUpSchema,
   validateForgotPasswordSchema,
-  validateVerifyOtpSchema,
   validateResetPasswordSchema,
-  validateResendOtpSchema,
-} from "src/lib/schemaValidation.js";
-import { validateFormData } from "src/middleware/formValidate.js";
+} from "../lib/schemaValidation.js";
+import { validateFormData } from "../middleware/formValidate.js";
 
 const router = Router();
 router.post(
