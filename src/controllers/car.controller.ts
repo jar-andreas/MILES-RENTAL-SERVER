@@ -26,7 +26,6 @@ export const createCar = tryCatchWrapper(
       fuelType,
       rating,
       tripsCount,
-      slug,
       transmission,
       features,
       carSpecs,
@@ -44,7 +43,7 @@ export const createCar = tryCatchWrapper(
       public_id: result.public_id,
     }));
 
-    const finalSlug = (slug || `${brand}-${modelName}-${year}`)
+    const finalSlug = (`${brand}-${modelName}-${year}`)
       .toLowerCase()
       .trim()
       .replace(/\s+/g, "-") // Replaces spaces with dashes
@@ -58,7 +57,7 @@ export const createCar = tryCatchWrapper(
         "A car with this custom slug already exists",
       );
     }
-
+     //handle slug creation
     const car = await Car.create({
       brand,
       description,
@@ -132,9 +131,9 @@ export const getAllCars = tryCatchWrapper(
       filter.category = { $regex: category, $options: "i" };
     }
 
-    const cars = await Car.find(filter).sort(
-      sort ? { [sort as string]: 1 } : { createdAt: -1 },
-    );
+    const cars = await Car.find(filter)
+      .sort(sort ? { [sort as string]: 1 } : { createdAt: -1 })
+      .lean();
     if (!cars || cars.length === 0) {
       return sendTsRestError(
         res,
@@ -157,7 +156,7 @@ export const getSingleCar = tryCatchWrapper(
     // even though your DB only has lowercase + numbers.
     const car = await Car.findOne({
       slug: { $regex: `^${slug}$`, $options: "i" },
-    });
+    }).lean();
     if (!car) {
       return sendTsRestError(res, 404, "Vehicle not found.");
     }
@@ -173,7 +172,8 @@ export const getTrendingCars = tryCatchWrapper(
     const trendingCars = await Car.find()
       .sort({ rating: -1, tripsCount: -1 })
       .limit(4)
-      .select("-description -features"); //for performance optimization removes the descri,features
+      .select("-description -features")
+      .lean(); //for performance optimization removes the descri,features
     if (!trendingCars || trendingCars.length === 0) {
       return sendTsRestError(res, 404, "No trending cars found");
     }

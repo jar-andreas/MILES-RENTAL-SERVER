@@ -18,7 +18,7 @@ export interface UserCar extends Document {
   year: number;
   pricePerDay: number;
   seats: number;
-  fuelType: string;
+  fuelType: "Petrol" | "Diesel" | "Hybrid" | "Electric" | string;
   features: string[];
   transmission: "Auto" | "Manual" | "Hybrid" | string;
   images: {
@@ -89,9 +89,9 @@ const CarSchema = new Schema<UserCar>(
     fuelType: {
       type: String,
       required: true,
-      trim: true,
+      enum: ["Petrol", "Diesel", "Hybrid", "Electric"],
     },
-    rating: { type: Number, default: 5 },
+    rating: { type: Number, min: 0, max: 5, default: 0 },
     tripsCount: { type: Number, default: 0 },
     transmission: {
       type: String,
