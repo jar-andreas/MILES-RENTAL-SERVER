@@ -74,7 +74,7 @@ export const createCar = tryCatchWrapper(
       rating,
       tripsCount,
       carSpecs,
-      image: uploadedImages,
+      images: uploadedImages,
       slug: finalSlug,
     });
 
@@ -125,7 +125,7 @@ export const getAllCars = tryCatchWrapper(
     const { brand, category, sort } = req.query;
     const filter: any = {};
     if (brand) {
-      filter.brand = { $regex: brand, $options: "i" };
+      filter.brand = { $regex: brand, $options: "i" }; //turns any query stored in database as uppercase to lowercase whule fetching data
     }
 
     if (category) {
@@ -149,24 +149,19 @@ export const getAllCars = tryCatchWrapper(
   },
 );
 
-// GET /api/cars/:slug
-export const getSingleCar = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  if (!req.session.userId) {
-    res
-      .status(401)
-      .json({ success: false, message: "Unauthorized. Please log in." });
-    return;
-  }
+export const getSingleCar = tryCatchWrapper(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { slug } = req.params;
 
-  const car = await Car.findOne({ slug: req.params.slug });
-
-  if (!car) {
-    res.status(404).json({ success: false, message: "Car not found" });
-    return;
-  }
-
-  res.status(200).json({ success: true, data: car });
-};
+    // The $options: 'i' handles the user typing uppercase,
+    // even though your DB only has lowercase + numbers.
+    const car = await Car.findOne({ slug: { $regex: `^${slug}$`, $options: "i" } });
+    if (!car) {
+      return sendTsRestError(res, 404, "Vehicle not found.");
+    }
+    return sendTsRestSuccess(res, 200, {
+      message: "Vehicle retrieved successfully",
+      data: car,
+    });
+  },
+);

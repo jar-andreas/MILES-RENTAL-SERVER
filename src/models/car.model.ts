@@ -28,10 +28,10 @@ export interface UserCar extends Document {
   rating: number;
   tripsCount: number;
   carSpecs: {
-    engine: string; // 3.5L V6
-    topSpeed: string; // 230 km/h
-    mileage: string; // 22 km/L
-    boot: string; // 454 L
+    engine: string;
+    topSpeed: string;
+    mileage: string;
+    boot: string; //
   };
   slug: string;
 }
@@ -131,6 +131,8 @@ const CarSchema = new Schema<UserCar>(
     slug: {
       type: String,
       unique: true,
+      lowercase: true,
+      required: true,
     },
   },
   {
