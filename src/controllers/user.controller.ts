@@ -1,12 +1,12 @@
-import User from "src/models/user.model.js";
-import Otp from "src/models/otp.js";
+import User from "../models/user.model.js";
+import Otp from "../models/otp.js";
 import { Request, Response, NextFunction } from "express";
-import tryCatchWrapper from "src/lib/tryCatchWrapper.js";
-import { sendTsRestError, sendTsRestSuccess } from "src/lib/responseHandler.js";
-import { sendOtpEmail, sendWelcomeEmail } from "src/lib/email.js";
+import tryCatchWrapper from "../lib/tryCatchWrapper.js";
+import { sendTsRestError, sendTsRestSuccess } from "../lib/responseHandler.js";
+import { sendOtpEmail, sendWelcomeEmail } from "../lib/email.js";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
-import { env } from "src/config/keys.js";
+import { env } from "../config/keys.js";
 
 //generate a cryptographically random 6 digit OTP
 const generateOtp = (): string => {

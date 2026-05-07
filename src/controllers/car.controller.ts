@@ -1,11 +1,11 @@
 import {
   uploadToCloudinary,
   deleteFromCloudinary,
-} from "src/lib/cloudinary.js";
+} from "../lib/cloudinary.js";
 import { NextFunction, Request, Response } from "express";
 import Car from "../models/car.model.js";
-import tryCatchWrapper from "src/lib/tryCatchWrapper.js";
-import { sendTsRestError, sendTsRestSuccess } from "src/lib/responseHandler.js";
+import tryCatchWrapper from "../lib/tryCatchWrapper.js";
+import { sendTsRestError, sendTsRestSuccess } from "../lib/responseHandler.js";
 
 interface ICarImage {
   url: string;

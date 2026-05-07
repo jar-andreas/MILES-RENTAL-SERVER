@@ -4,7 +4,7 @@ import {
   UploadApiErrorResponse,
   UploadApiOptions,
 } from "cloudinary";
-import { env } from "src/config/keys.js";
+import { env } from "../config/keys.js";
 
 interface CloudinaryUploadResult {
   url: string;

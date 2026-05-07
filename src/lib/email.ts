@@ -1,5 +1,5 @@
-import { env } from "src/config/keys.js";
-import logger from "src/config/logger.js";
+import { env } from "../config/keys.js";
+import logger from "../config/logger.js";
 
 interface SendEmailOptions {
   to: string;

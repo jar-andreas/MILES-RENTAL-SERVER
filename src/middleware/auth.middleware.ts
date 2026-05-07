@@ -1,5 +1,5 @@
 import {Request,Response,NextFunction} from "express";
-import {sendTsRestError} from "src/lib/responseHandler.js"
+import {sendTsRestError} from "../lib/responseHandler.js"
 
 //middleware to check if user is authenticated (has valid session)
 export const isAuthenticated = (

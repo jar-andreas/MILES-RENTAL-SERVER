@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from "express";
-import { env } from "src/config/keys.js";
-import logger from "src/config/logger.js";
+import { env } from "../config/keys.js";
+import logger from "../config/logger.js";
 import pinoHttpModule from "pino-http";
 const pinoHttp = pinoHttpModule.default || pinoHttpModule;
 import { randomUUID } from "crypto";
-import { sendTsRestError } from "src/lib/responseHandler.js";
+import { sendTsRestError } from "../lib/responseHandler.js";
 
 // Determine if we're in development mode
 const isDev = env.NODE_ENV === "development";

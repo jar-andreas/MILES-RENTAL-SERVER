@@ -142,3 +142,116 @@ export const validateContactUsSchema = z.object({
     .min(10, { message: "Message must be at least 10 characters" })
     .max(1000, { message: "Message cannot exceed 1000 characters" }),
 });
+
+export const validateCreateCarSchema = z.object({
+  brand: z
+    .string()
+    .trim()
+    .min(1, { message: "Brand is required" })
+    .max(50, { message: "Brand name is too long" }),
+
+  description: z
+    .string()
+    .trim()
+    .min(10, { message: "Description must be at least 10 characters" })
+    .max(1000, { message: "Description cannot exceed 1000 characters" }),
+
+  category: z.enum(["LUXURY", "SEDAN", "SUV", "TRUCK"], {
+    message: "Invalid category",
+  }),
+
+  tags: z
+    .array(
+      z.enum([
+        "CITY",
+        "BEST SELLER",
+        "ECONOMY",
+        "PREMIUM",
+        "LOGISTICS",
+        "EXECUTIVE",
+        "FAMILY",
+        "ELECTRIC",
+      ]),
+    )
+    .min(1, { message: "At least one tag is required" }),
+
+  modelName: z
+    .string()
+    .trim()
+    .min(1, { message: "Model name is required" })
+    .max(100, { message: "Model name is too long" }),
+
+  year: z
+    .number({
+      message: "Year must be a number",
+    })
+    .min(1900, { message: "Invalid year" })
+    .max(new Date().getFullYear() + 1, {
+      message: "Year cannot be in the far future",
+    }),
+
+  pricePerDay: z
+    .number({
+      message: "Price per day must be a number",
+    })
+    .min(0, { message: "Price cannot be negative" }),
+
+  seats: z
+    .number({
+      message: "Seats must be a number",
+    })
+    .min(1, { message: "Seats must be at least 1" }),
+
+  fuelType: z.string().trim().min(1, { message: "Fuel type is required" }),
+
+  transmission: z.enum(["Auto", "Manual", "Hybrid"], {
+    message: "Invalid transmission type",
+  }),
+
+  features: z.array(z.string().trim()).optional(),
+
+  images: z
+    .array(
+      z.object({
+        url: z.string().url({
+          message: "Invalid image URL",
+        }),
+
+        public_id: z
+          .string()
+          .trim()
+          .min(1, { message: "Public ID is required" }),
+      }),
+    )
+    .min(1, { message: "At least one image is required" }),
+
+  rating: z.number().min(0).max(5).optional(),
+
+  tripsCount: z.number().min(0).optional(),
+
+  carSpecs: z.object({
+    engine: z.string().trim().min(1, {
+      message: "Engine spec is required",
+    }),
+
+    topSpeed: z.string().trim().min(1, {
+      message: "Top speed is required",
+    }),
+
+    mileage: z.string().trim().min(1, {
+      message: "Mileage is required",
+    }),
+
+    boot: z.string().trim().min(1, {
+      message: "Boot capacity is required",
+    }),
+  }),
+
+  slug: z
+    .string()
+    .trim()
+    .min(1, { message: "Slug is required" })
+    .regex(/^[a-z0-9-]+$/, {
+      message: "Slug can only contain lowercase letters, numbers, and hyphens",
+    }),
+});

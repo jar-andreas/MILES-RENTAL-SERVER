@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { handleContactInquiry } from "src/controllers/contactUs.controller.js";
-import { customRateLimiter } from "src/middleware/rateLimit.middelware.js";
-import { validateFormData } from "src/middleware/formValidate.js";
-import { validateContactUsSchema } from "src/lib/schemaValidation.js";
+import { handleContactInquiry } from "../controllers/contactUs.controller.js";
+import { customRateLimiter } from "../middleware/rateLimit.middelware.js";
+import { validateFormData } from "../middleware/formValidate.js";
+import { validateContactUsSchema } from "../lib/schemaValidation.js";
 
 const router = Router();
 
