@@ -155,13 +155,31 @@ export const getSingleCar = tryCatchWrapper(
 
     // The $options: 'i' handles the user typing uppercase,
     // even though your DB only has lowercase + numbers.
-    const car = await Car.findOne({ slug: { $regex: `^${slug}$`, $options: "i" } });
+    const car = await Car.findOne({
+      slug: { $regex: `^${slug}$`, $options: "i" },
+    });
     if (!car) {
       return sendTsRestError(res, 404, "Vehicle not found.");
     }
     return sendTsRestSuccess(res, 200, {
       message: "Vehicle retrieved successfully",
       data: car,
+    });
+  },
+);
+
+export const getTrendingCars = tryCatchWrapper(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const trendingCars = await Car.find()
+      .sort({ rating: -1, tripsCount: -1 })
+      .limit(4)
+      .select("-description -features"); //for performance optimization removes the descri,features
+    if (!trendingCars || trendingCars.length === 0) {
+      return sendTsRestError(res, 404, "No trending cars found");
+    }
+    return sendTsRestSuccess(res, 200, {
+      message: "Trending cars retrieved successfully",
+      data: trendingCars,
     });
   },
 );
