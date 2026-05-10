@@ -1,7 +1,4 @@
-import {
-  uploadToCloudinary,
-  deleteFromCloudinary,
-} from "../lib/cloudinary.js";
+import { uploadToCloudinary, deleteFromCloudinary } from "../lib/cloudinary.js";
 import { NextFunction, Request, Response } from "express";
 import Car from "../models/car.model.js";
 import tryCatchWrapper from "../lib/tryCatchWrapper.js";
@@ -43,7 +40,7 @@ export const createCar = tryCatchWrapper(
       public_id: result.public_id,
     }));
 
-    const finalSlug = (`${brand}-${modelName}-${year}`)
+    const finalSlug = `${brand}-${modelName}-${year}`
       .toLowerCase()
       .trim()
       .replace(/\s+/g, "-") // Replaces spaces with dashes
@@ -57,7 +54,7 @@ export const createCar = tryCatchWrapper(
         "A car with this custom slug already exists",
       );
     }
-     //handle slug creation
+    //handle slug creation
     const car = await Car.create({
       brand,
       description,
@@ -121,7 +118,7 @@ export const deleteCar = tryCatchWrapper(
 
 export const getAllCars = tryCatchWrapper(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { brand, category, sort } = req.query;
+    const { brand, category, sort, page = 1, limit = 9 } = req.query;
     const filter: any = {};
     if (brand) {
       filter.brand = { $regex: brand, $options: "i" }; //turns any query stored in database as uppercase to lowercase whule fetching data
@@ -131,9 +128,20 @@ export const getAllCars = tryCatchWrapper(
       filter.category = { $regex: category, $options: "i" };
     }
 
-    const cars = await Car.find(filter)
-      .sort(sort ? { [sort as string]: 1 } : { createdAt: -1 })
-      .lean();
+    // 2. Calculate Pagination Values
+    const pageNum = Math.max(1, parseInt(page as string));
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit as string)));
+    const skip = (pageNum - 1) * limitNum;
+
+    // 3. Execute queries in parallel for better performance
+    const [cars, totalCars] = await Promise.all([
+      Car.find(filter)
+        .sort(sort ? { [sort as string]: 1 } : { createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
+      Car.countDocuments(filter),
+    ]);
     if (!cars || cars.length === 0) {
       return sendTsRestError(
         res,
@@ -141,9 +149,20 @@ export const getAllCars = tryCatchWrapper(
         "No vehicles found matching your criteria",
       );
     }
+    // 5. Calculate Total Pages
+    const totalPages = Math.ceil(totalCars / limitNum);
+
     return sendTsRestSuccess(res, 200, {
-      count: cars.length,
+      message: "Vehicles retrieved successfully",
       data: cars,
+      pagination: {
+        totalItems: totalCars,
+        totalPages,
+        currentPage: pageNum,
+        pageSize: cars.length,
+        hasNextPage: pageNum < totalPages,
+        hasPrevPage: pageNum > 1,
+      },
     });
   },
 );

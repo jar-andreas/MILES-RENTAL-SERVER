@@ -192,7 +192,7 @@ export const loginUser = tryCatchWrapper(
     delete userResponse.password;
     //save session of user
     req.session.userId = user._id.toString();
-    req.session.role = "client";
+    req.session.role = user.role || "client";
     return sendTsRestSuccess(res, 200, {
       message: "User logged in successfully",
       data: userResponse,

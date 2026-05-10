@@ -14,7 +14,6 @@ const router = Router();
 router.post(
   "/create",
   isAdmin,
-  validateFormData(validateCreateCarSchema),
   createCar,
 );
 router.get("/all", getAllCars);
