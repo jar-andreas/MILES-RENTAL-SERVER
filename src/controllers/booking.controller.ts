@@ -14,7 +14,6 @@ export const createBooking = tryCatchWrapper(
       returnDate,
       pickupTime,
       returnTime,
-      totalPrice,
       driverOption,
     } = req.body;
 
