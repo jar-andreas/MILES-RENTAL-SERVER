@@ -20,7 +20,7 @@ export const isAdmin = (
   res:Response,
   next:NextFunction
 ):void => {
-  if (!req.session || req.session.userId) {
+  if (!req.session || !req.session.userId) {
     sendTsRestError(res, 401 , "Unauthorized.Please log in to continue");
     return;
   }
