@@ -1,5 +1,5 @@
 import type { Response } from "express";
-import logger from "src/config/logger.js";
+import logger from "../config/logger.js";
 
 // Send response directly to Express
 const sendTsRestResponse = <T extends number>(

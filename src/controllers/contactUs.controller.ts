@@ -1,8 +1,8 @@
-import ContactInquiry from "src/models/contactUs.model.js";
+import ContactInquiry from "../models/contactUs.model.js";
 import { Request, Response, NextFunction } from "express";
-import tryCatchWrapper from "src/lib/tryCatchWrapper.js";
-import { sendContactInquiry } from "src/lib/email.js";
-import { sendTsRestError, sendTsRestSuccess } from "src/lib/responseHandler.js";
+import tryCatchWrapper from "../lib/tryCatchWrapper.js";
+import { sendContactInquiry } from "../lib/email.js";
+import { sendTsRestError, sendTsRestSuccess } from "../lib/responseHandler.js";
 
 export const handleContactInquiry = tryCatchWrapper(
   async (req: Request, res: Response, next: NextFunction) => {

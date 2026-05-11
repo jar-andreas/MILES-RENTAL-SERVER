@@ -4,11 +4,18 @@ import {
   getAllCars,
   getSingleCar,
   getTrendingCars,
-} from "src/controllers/car.controller.js";
+} from "../controllers/car.controller.js";
+import { isAdmin } from "../middleware/auth.middleware.js";
+import { validateFormData } from "../middleware/formValidate.js";
+import { validateCreateCarSchema } from "../lib/schemaValidation.js";
 
 const router = Router();
 
-router.post("/create", createCar);
+router.post(
+  "/create",
+  isAdmin,
+  createCar,
+);
 router.get("/all", getAllCars);
 router.get("/trending", getTrendingCars);
 router.get("/single/:slug", getSingleCar);
