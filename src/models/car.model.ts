@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface UserCar extends Document {
   brand: string;
   description: string;
-  category: "SEDAN" | "SUV" | "TRUCK" | "BUS";
+  category: "LUXURY" | "SEDAN" | "SUV" | "TRUCK";
   tags: (
     | "CITY"
     | "BEST SELLER"
@@ -53,7 +53,7 @@ const CarSchema = new Schema<UserCar>(
       type: String,
       required: true,
       uppercase: true,
-      enum: ["SEDAN", "SUV", "TRUCK", "BUS"],
+      enum: ["LUXURY", "SEDAN", "SUV", "TRUCK"],
     },
     modelName: {
       type: String,
@@ -97,6 +97,7 @@ const CarSchema = new Schema<UserCar>(
       type: String,
       required: true,
       enum: ["Auto", "Manual", "Hybrid"],
+      uppercase: true,
     },
     features: {
       type: [String],
