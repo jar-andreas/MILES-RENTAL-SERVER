@@ -12,6 +12,8 @@ export interface UserBooking extends Document {
   totalDays: number;
   totalPrice: number;
   driverOption: boolean;
+  driverFee: number;
+  serviceFee: number;
   bookingStatus: "Pending" | "Confirmed" | "Cancelled" | "Completed";
 }
 
@@ -76,6 +78,16 @@ const BookingSchema = new Schema<UserBooking>(
     driverOption: {
       type: Boolean,
       default: false,
+    },
+
+    driverFee: {
+      type: Number,
+      default: 25,
+    },
+    
+    serviceFee: {
+      type: Number,
+      default: 10,
     },
 
     bookingStatus: {

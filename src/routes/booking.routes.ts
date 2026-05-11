@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  cancelBooking,
   createBooking,
   getMyBookings,
 } from "../controllers/booking.controller.js";
@@ -17,5 +18,6 @@ router.post(
 );
 
 router.get("/my-bookings", isAuthenticated, getMyBookings);
+router.post("/cancel-booking/:id", isAuthenticated, cancelBooking);
 
 export default router;

@@ -120,3 +120,31 @@ export const getMyBookings = tryCatchWrapper(
     });
   },
 );
+
+export const cancelBooking = tryCatchWrapper(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const userId = req.session.userId;
+
+    //find booking to make sure it is for the User
+    const booking = await Booking.findOne({ _id: id, user: userId });
+
+    if (!booking) {
+      return sendTsRestError(res, 404, "Booking not found");
+    }
+    //option to not be able to cancel a trip that has already confrimed or completed
+    if (booking.bookingStatus !== "Pending") {
+      return sendTsRestError(
+        res,
+        400,
+        `Cannot cancel a booking that is ${booking.bookingStatus}`,
+      );
+    }
+    booking.bookingStatus = "Cancelled";
+    await booking.save();
+    return sendTsRestSuccess(res, 200, {
+      message: "Booking cancelled successfully",
+      booking,
+    });
+  },
+);
