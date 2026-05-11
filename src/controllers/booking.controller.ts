@@ -16,6 +16,8 @@ export const createBooking = tryCatchWrapper(
       returnTime,
       totalPrice,
       driverOption,
+      driverFee,
+      serviceFee,
     } = req.body;
 
     const userId = req.session.userId;
@@ -50,11 +52,11 @@ export const createBooking = tryCatchWrapper(
     }
 
     // Pull the price per day directly from the database result
-    let calculatedPrice = totalDays * carDetails.pricePerDay;
+    let calculatedPrice = totalDays * ( carDetails.pricePerDay + serviceFee);
 
     // Optional: Add driver fee if selected
     if (driverOption === true) {
-      calculatedPrice += 25 * totalDays; // $25 extra per day for a driver
+      calculatedPrice +=  driverFee * totalDays; // $25 extra per day for a driver
     }
 
     // Availability Check
@@ -133,12 +135,27 @@ export const cancelBooking = tryCatchWrapper(
       return sendTsRestError(res, 404, "Booking not found");
     }
     //option to not be able to cancel a trip that has already confrimed or completed
-    if (booking.bookingStatus !== "Pending") {
+    if (booking.bookingStatus !== "Pending" && booking.bookingStatus !== "Confirmed") {
       return sendTsRestError(
         res,
         400,
         `Cannot cancel a booking that is ${booking.bookingStatus}`,
       );
+    }
+
+    const bookingTime = new Date(booking.createdAt).getTime();
+    const currentTime = new Date().getTime();
+
+    const twentyFourHours = 24 * 60 * 60 * 1000;
+
+    const differenceInTime = currentTime - bookingTime;
+
+    if(differenceInTime > twentyFourHours){
+      return sendTsRestError(
+        res,
+        400,
+        "Cancellation window has expired"
+      )
     }
     booking.bookingStatus = "Cancelled";
     await booking.save();
