@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   createBooking,
   getMyBookings,
+  getSingleBooking,
 } from "../controllers/booking.controller.js";
 import { validateFormData } from "../middleware/formValidate.js";
 import { validateBookingSchema } from "../lib/schemaValidation.js";
@@ -17,5 +18,6 @@ router.post(
 );
 
 router.get("/my-bookings", isAuthenticated, getMyBookings);
+router.get("/:id", isAuthenticated, getSingleBooking);
 
 export default router;

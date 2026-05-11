@@ -120,3 +120,30 @@ export const getMyBookings = tryCatchWrapper(
     });
   },
 );
+
+export const getSingleBooking = tryCatchWrapper(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const userId = req.session.userId;
+
+    const booking = await Booking.findOne({
+      _id: id,
+      user: userId,
+    })
+      .populate("car")
+      .populate("user", "firstName lastName email")
+      .lean();
+
+    if (!booking) {
+      return sendTsRestSuccess(res, 404, {
+        success: false,
+        message: "Booking not found",
+      });
+    }
+
+    return sendTsRestSuccess(res, 200, {
+      success: true,
+      booking,
+    });
+  },
+);
