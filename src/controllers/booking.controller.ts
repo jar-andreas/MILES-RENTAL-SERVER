@@ -14,10 +14,7 @@ export const createBooking = tryCatchWrapper(
       returnDate,
       pickupTime,
       returnTime,
-      totalPrice,
       driverOption,
-      driverFee,
-      serviceFee,
     } = req.body;
 
     const userId = req.session.userId;
@@ -51,12 +48,15 @@ export const createBooking = tryCatchWrapper(
       return sendTsRestError(res, 400, "Return date must be after pickup date");
     }
 
+    const DRIVERFEE = 25;
+    const SERVICEFEE = 10;
+
     // Pull the price per day directly from the database result
-    let calculatedPrice = totalDays * ( carDetails.pricePerDay + serviceFee);
+    let totalPrice = totalDays * (carDetails.pricePerDay + SERVICEFEE);
 
     // Optional: Add driver fee if selected
     if (driverOption === true) {
-      calculatedPrice +=  driverFee * totalDays; // $25 extra per day for a driver
+      totalPrice += DRIVERFEE * totalDays; // $25 extra per day for a driver
     }
 
     // Availability Check
@@ -85,7 +85,7 @@ export const createBooking = tryCatchWrapper(
       pickupTime,
       returnTime,
       totalDays,
-      totalPrice: calculatedPrice,
+      totalPrice,
       driverOption,
     });
 
@@ -135,7 +135,10 @@ export const cancelBooking = tryCatchWrapper(
       return sendTsRestError(res, 404, "Booking not found");
     }
     //option to not be able to cancel a trip that has already confrimed or completed
-    if (booking.bookingStatus !== "Pending" && booking.bookingStatus !== "Confirmed") {
+    if (
+      booking.bookingStatus !== "Pending" &&
+      booking.bookingStatus !== "Confirmed"
+    ) {
       return sendTsRestError(
         res,
         400,
@@ -150,12 +153,8 @@ export const cancelBooking = tryCatchWrapper(
 
     const differenceInTime = currentTime - bookingTime;
 
-    if(differenceInTime > twentyFourHours){
-      return sendTsRestError(
-        res,
-        400,
-        "Cancellation window has expired"
-      )
+    if (differenceInTime > twentyFourHours) {
+      return sendTsRestError(res, 400, "Cancellation window has expired");
     }
     booking.bookingStatus = "Cancelled";
     await booking.save();
