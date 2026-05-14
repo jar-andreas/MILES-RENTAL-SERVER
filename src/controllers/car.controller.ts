@@ -202,3 +202,18 @@ export const getTrendingCars = tryCatchWrapper(
     });
   },
 );
+
+export const getCarBySlug = tryCatchWrapper(
+  async (req: Request, res: Response) => {
+    const { slug } = req.params;
+    const car = await Car.findOne({ slug: slug }).lean();
+
+    if (!car) {
+      return sendTsRestError(res, 404, "Car not found");
+    }
+    return sendTsRestSuccess(res, 200, {
+      message: "Car retrieved Successfully",
+      data: car,
+    });
+  },
+);

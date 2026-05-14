@@ -15,6 +15,7 @@ import userRoutes from "./src/routes/user.routes.js";
 import contactRoutes from "./src/routes/contactUs.routes.js";
 import carRoutes from "./src/routes/car.routes.js";
 import bookingRoutes from "./src/routes/booking.routes.js"
+import paymentRoutes from "./src/routes/payment.routes.js"
 import { globalLimiter } from "./src/middleware/rateLimit.middelware.js";
 
 declare global {
@@ -139,6 +140,7 @@ app.use("/api/v1/user", userRoutes);
 app.use("/api/v1/contact", contactRoutes);
 app.use("/api/v1/car", carRoutes);
 app.use("/api/v1/booking", bookingRoutes);
+app.use("/api/v1/payment", paymentRoutes);
 
 // Handle 404
 app.use(notFoundRoutes);
