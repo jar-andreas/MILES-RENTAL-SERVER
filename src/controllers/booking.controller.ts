@@ -92,8 +92,6 @@ export const createBooking = tryCatchWrapper(
       totalDays,
       totalPrice,
       driverOption,
-      driverFee,
-      serviceFee,
     });
 
     return sendTsRestSuccess(res, 201, {
