@@ -262,7 +262,7 @@ export const sendContactInquiry = async (
 
   return sendEmail({
     // env.EMAIL_OWNER is where you want to RECEIVE the inquiry
-    to: env.EMAIL_OWNER, 
+    to: env.EMAIL_OWNER,
     toName: "Miles Admin",
     subject: `Contact Form: ${subject}`,
     htmlContent,

@@ -20,6 +20,7 @@ export interface UserCar extends Document {
   seats: number;
   fuelType: "Petrol" | "Diesel" | "Hybrid" | "Electric" | string;
   features: string[];
+  status: "available" | "booked" | "maintenance";
   transmission: "Auto" | "Manual" | "Hybrid" | string;
   images: {
     url: string;
@@ -134,6 +135,12 @@ const CarSchema = new Schema<UserCar>(
       unique: true,
       lowercase: true,
       required: true,
+    },
+    status: {
+      type: String,
+      required: true,
+      enum: ["available", "booked", "maintenance"],
+      default: "available", // New cars are available by default
     },
   },
   {

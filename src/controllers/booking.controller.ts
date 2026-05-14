@@ -48,16 +48,20 @@ export const createBooking = tryCatchWrapper(
       return sendTsRestError(res, 400, "Return date must be after pickup date");
     }
 
-    const driverFee = 25;
-    const serviceFee = 10;
-    
+    const DRIVERFEE = 25;
+    const SERVICEFEE = 10;
 
     // Pull the price per day directly from the database result
-    let totalPrice = totalDays * (carDetails.pricePerDay + serviceFee);
+    let totalPrice = totalDays * (carDetails.pricePerDay + SERVICEFEE);
 
     // Optional: Add driver fee if selected
     if (driverOption === true) {
-      totalPrice += driverFee * totalDays; // $25 extra per day for a driver
+      totalPrice += DRIVERFEE * totalDays; // $25 extra per day for a driver
+    }
+
+    // prevent double booking
+    if (carDetails.status === "booked") {
+      return sendTsRestError(res, 400, "Sorry, this car is already booked and unavailable.");
     }
 
     // Availability Check
@@ -163,6 +167,33 @@ export const cancelBooking = tryCatchWrapper(
     await booking.save();
     return sendTsRestSuccess(res, 200, {
       message: "Booking cancelled successfully",
+      booking,
+    });
+  },
+);
+
+export const getSingleBooking = tryCatchWrapper(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const userId = req.session.userId;
+
+    const booking = await Booking.findOne({
+      _id: id,
+      user: userId,
+    })
+      .populate("car")
+      .populate("user", "firstName lastName email")
+      .lean();
+
+    if (!booking) {
+      return sendTsRestSuccess(res, 404, {
+        success: false,
+        message: "Booking not found",
+      });
+    }
+
+    return sendTsRestSuccess(res, 200, {
+      success: true,
       booking,
     });
   },
