@@ -28,5 +28,12 @@ export const getAdminBookings = tryCatchWrapper(
       ],
     }).lean();
     const matchUserIds = getUsers.map((user) => user._id);
+
+    const bookings = await Booking.find({
+      ...(sanitizeQuery && {
+        $or: [{ userId: { $in: matchUserIds } }],
+      }),
+      ...(bookingStatus && { bookingStatus: bookingStatus }),
+    });
   },
 );
