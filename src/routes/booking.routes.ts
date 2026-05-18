@@ -18,6 +18,6 @@ router.post(
 );
 
 router.get("/my-bookings", isAuthenticated, getMyBookings);
-router.get("/:id", isAuthenticated, getSingleBooking);
+router.post("/cancel-booking/:id", isAuthenticated, cancelBooking);
 
 export default router;

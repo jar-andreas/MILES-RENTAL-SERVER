@@ -288,19 +288,9 @@ export const validateBookingSchema = z
         message: "Return date must be a valid date",
       }),
 
-    pickupTime: z
-      .string({ message: "Pickup time is required" })
-      .regex(
-        /^(0?[1-9]|1[0-2]):[0-5]\d\s?(AM|PM|am|pm)$/,
-        "Pickup time must be in HH:MM AM/PM format (e.g., 10:00 AM)",
-      ),
+    pickupTime: z.string({ message: "Pickup time is required" }),
 
-    returnTime: z
-      .string({ message: "Return time is required" })
-      .regex(
-        /^(0?[1-9]|1[0-2]):[0-5]\d\s?(AM|PM|am|pm)$/,
-        "Return time must be in HH:MM AM/PM format (e.g., 04:00 PM)",
-      ),
+    returnTime: z.string({ message: "Return time is required" }),
 
     driverOption: z.boolean().default(false),
   })

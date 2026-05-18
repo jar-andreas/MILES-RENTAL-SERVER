@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface UserCar extends Document {
   brand: string;
   description: string;
-  category: "SEDAN" | "SUV" | "TRUCK" | "BUS";
+  category: "LUXURY" | "SEDAN" | "SUV" | "TRUCK";
   tags: (
     | "CITY"
     | "BEST SELLER"
@@ -20,6 +20,7 @@ export interface UserCar extends Document {
   seats: number;
   fuelType: "Petrol" | "Diesel" | "Hybrid" | "Electric" | string;
   features: string[];
+  status: "available" | "booked" | "maintenance";
   transmission: "Auto" | "Manual" | "Hybrid" | string;
   images: {
     url: string;
@@ -53,7 +54,7 @@ const CarSchema = new Schema<UserCar>(
       type: String,
       required: true,
       uppercase: true,
-      enum: ["SEDAN", "SUV", "TRUCK", "BUS"],
+      enum: ["LUXURY", "SEDAN", "SUV", "TRUCK"],
     },
     modelName: {
       type: String,
@@ -97,6 +98,7 @@ const CarSchema = new Schema<UserCar>(
       type: String,
       required: true,
       enum: ["Auto", "Manual", "Hybrid"],
+      uppercase: true,
     },
     features: {
       type: [String],
@@ -133,6 +135,12 @@ const CarSchema = new Schema<UserCar>(
       unique: true,
       lowercase: true,
       required: true,
+    },
+    status: {
+      type: String,
+      required: true,
+      enum: ["available", "booked", "maintenance"],
+      default: "available", // New cars are available by default
     },
   },
   {

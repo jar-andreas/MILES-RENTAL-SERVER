@@ -15,6 +15,8 @@ export interface UserBooking extends Document {
   driverFee: number;
   serviceFee: number;
   bookingStatus: "Pending" | "Confirmed" | "Cancelled" | "Completed";
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const BookingSchema = new Schema<UserBooking>(
