@@ -123,24 +123,16 @@ export const getMyBookings = tryCatchWrapper(
   },
 );
 
-export const getSingleBooking = tryCatchWrapper(
+export const cancelBooking = tryCatchWrapper(
   async (req: Request, res: Response) => {
     const { id } = req.params;
     const userId = req.session.userId;
 
-    const booking = await Booking.findOne({
-      _id: id,
-      user: userId,
-    })
-      .populate("car")
-      .populate("user", "firstName lastName email")
-      .lean();
+    //find booking to make sure it is for the User
+    const booking = await Booking.findOne({ _id: id, user: userId });
 
     if (!booking) {
-      return sendTsRestSuccess(res, 404, {
-        success: false,
-        message: "Booking not found",
-      });
+      return sendTsRestError(res, 404, "Booking not found");
     }
     //option to not be able to cancel a trip that has already confrimed or completed
     if (
@@ -167,7 +159,7 @@ export const getSingleBooking = tryCatchWrapper(
     booking.bookingStatus = "Cancelled";
     await booking.save();
     return sendTsRestSuccess(res, 200, {
-      success: true,
+      message: "Booking cancelled successfully",
       booking,
     });
   },

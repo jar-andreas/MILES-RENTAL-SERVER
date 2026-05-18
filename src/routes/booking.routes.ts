@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  cancelBooking,
   createBooking,
   getMyBookings,
   getSingleBooking,
@@ -18,6 +19,7 @@ router.post(
 );
 
 router.get("/my-bookings", isAuthenticated, getMyBookings);
+router.get("/single-booking/:id", isAuthenticated, getSingleBooking);
 router.post("/cancel-booking/:id", isAuthenticated, cancelBooking);
 
 export default router;
