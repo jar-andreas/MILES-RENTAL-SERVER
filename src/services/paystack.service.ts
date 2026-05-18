@@ -18,7 +18,6 @@ export interface InitializePaymentData {
 export interface VerifyPaymentData {
   reference: string;
 }
-
 //blueprint for the data your server expects to receive back from Paystack's API after a transaction is processed (The verification result)
 export interface PaystackSubscriptionResponse {
   status: boolean;
