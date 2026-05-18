@@ -4,7 +4,7 @@ import {
   getAllCars,
   getSingleCar,
   getTrendingCars,
-  getCarBySlug,
+  getCar,
 } from "../controllers/car.controller.js";
 import { isAdmin } from "../middleware/auth.middleware.js";
 import { validateFormData } from "../middleware/formValidate.js";
@@ -21,6 +21,6 @@ router.post(
 router.get("/all", getAllCars);
 router.get("/trending", getTrendingCars);
 router.get("/single/:slug", getSingleCar);
-router.get("/:slug", getCarBySlug);
+router.get("/get-car", getCar);
 
 export default router;

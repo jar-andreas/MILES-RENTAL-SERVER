@@ -86,7 +86,7 @@ export class PaystackService {
           carId: data.carId,
         },
         // Point this to your frontend verification route
-        callback_url: `${env.CLIENT_URL}/booking/${data.slug}?reference=${reference}`,
+        callback_url: `${env.CLIENT_URL}/verify-payment/?reference=${reference}`,
       });
       return response.data;
     } catch (error: any) {

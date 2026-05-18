@@ -59,11 +59,6 @@ export const createBooking = tryCatchWrapper(
       totalPrice += DRIVERFEE * totalDays; // $25 extra per day for a driver
     }
 
-    // prevent double booking
-    if (carDetails.status === "booked") {
-      return sendTsRestError(res, 400, "Sorry, this car is already booked and unavailable.");
-    }
-
     // Availability Check
     // Look for existing bookings for this car that overlap with the new dates
     const existingBooking = await Booking.findOne({
