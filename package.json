@@ -7,7 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon --watch \"**/*.ts\" --exec tsx --inspect index.ts",
     "build": "tsc",
-    "start": "node -r tsconfig-paths/register dist/index.js"
+    "start": "node -r tsconfig-paths/register dist/index.js",
+    "ngrok": "ngrok http --url=earthling-occupant-vagrancy.ngrok-free.dev 3700"
   },
   "keywords": [],
   "author": "",
@@ -29,6 +30,7 @@
     "typescript": "^6.0.3"
   },
   "dependencies": {
+    "axios": "^1.16.0",
     "bcrypt": "^6.0.0",
     "cloudinary": "^2.10.0",
     "connect-mongo": "^6.0.0",

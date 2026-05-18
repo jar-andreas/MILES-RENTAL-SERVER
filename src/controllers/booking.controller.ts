@@ -48,12 +48,15 @@ export const createBooking = tryCatchWrapper(
       return sendTsRestError(res, 400, "Return date must be after pickup date");
     }
 
+    const DRIVERFEE = 25;
+    const SERVICEFEE = 10;
+
     // Pull the price per day directly from the database result
-    let calculatedPrice = totalDays * carDetails.pricePerDay;
+    let totalPrice = totalDays * (carDetails.pricePerDay + SERVICEFEE);
 
     // Optional: Add driver fee if selected
     if (driverOption === true) {
-      calculatedPrice += 25 * totalDays; // $25 extra per day for a driver
+      totalPrice += DRIVERFEE * totalDays; // $25 extra per day for a driver
     }
 
     // Availability Check
@@ -82,7 +85,7 @@ export const createBooking = tryCatchWrapper(
       pickupTime,
       returnTime,
       totalDays,
-      totalPrice: calculatedPrice,
+      totalPrice,
       driverOption,
     });
 
@@ -116,6 +119,75 @@ export const getMyBookings = tryCatchWrapper(
       success: true,
       count: bookings.length,
       bookings,
+    });
+  },
+);
+
+export const cancelBooking = tryCatchWrapper(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const userId = req.session.userId;
+
+    //find booking to make sure it is for the User
+    const booking = await Booking.findOne({ _id: id, user: userId });
+
+    if (!booking) {
+      return sendTsRestError(res, 404, "Booking not found");
+    }
+    //option to not be able to cancel a trip that has already confrimed or completed
+    if (
+      booking.bookingStatus !== "Pending" &&
+      booking.bookingStatus !== "Confirmed"
+    ) {
+      return sendTsRestError(
+        res,
+        400,
+        `Cannot cancel a booking that is ${booking.bookingStatus}`,
+      );
+    }
+
+    const bookingTime = new Date(booking.createdAt).getTime();
+    const currentTime = new Date().getTime();
+
+    const twentyFourHours = 24 * 60 * 60 * 1000;
+
+    const differenceInTime = currentTime - bookingTime;
+
+    if (differenceInTime > twentyFourHours) {
+      return sendTsRestError(res, 400, "Cancellation window has expired");
+    }
+    booking.bookingStatus = "Cancelled";
+    await booking.save();
+    return sendTsRestSuccess(res, 200, {
+      message: "Booking cancelled successfully",
+      booking,
+    });
+  },
+);
+
+export const getSingleBooking = tryCatchWrapper(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const userId = req.session.userId;
+
+    const booking = await Booking.findOne({
+      _id: id,
+      user: userId,
+    })
+      .populate("car")
+      .populate("user", "firstName lastName email")
+      .lean();
+
+    if (!booking) {
+      return sendTsRestSuccess(res, 404, {
+        success: false,
+        message: "Booking not found",
+      });
+    }
+
+    return sendTsRestSuccess(res, 200, {
+      success: true,
+      booking,
     });
   },
 );
