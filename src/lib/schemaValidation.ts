@@ -303,8 +303,10 @@ export const ValidateVerifyPaymentSchema = z.object({
   reference: z.string(),
 });
 
-export const validateAdminNewBookingSchema = validateBookingSchema.merge(
-  z.object({
+// FIXED: Cleaned up the .merge() crash over refinements by destructuring the core shapes safely inside the body block
+export const validateAdminNewBookingSchema = z.object({
+  body: z.object({
+    ...validateBookingSchema.shape,
     fullname: z.string().min(3, "Full name must be at least 3 characters long"),
     phone: z
       .string()
@@ -314,9 +316,13 @@ export const validateAdminNewBookingSchema = validateBookingSchema.merge(
         "Invalid phone number",
       ),
     email: z
-      .string({ message: "Email address is required" })
+      .string({ message: "Email address is required" }) 
       .email("Please enter a valid email address")
       .trim()
       .toLowerCase(),
+  })
+  .refine((data) => new Date(data.returnDate) > new Date(data.pickupDate), {
+    message: "Return date must be after pickup date",
+    path: ["returnDate"],
   }),
-);
+});

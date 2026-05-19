@@ -3,6 +3,8 @@ import Booking from "../models/booking.model.js";
 import tryCatchWrapper from "../lib/tryCatchWrapper.js";
 import { sendTsRestError, sendTsRestSuccess } from "../lib/responseHandler.js";
 import { NextFunction, Request, Response } from "express";
+import Car from "../models/car.model.js";
+import logger from "../config/logger.js";
 
 export const getAdminBookings = tryCatchWrapper(
   async (req: Request, res: Response) => {
@@ -51,7 +53,7 @@ export const getAdminBookings = tryCatchWrapper(
 
     const bookings = await Booking.find(matchState)
       .populate("user", "firstName lastName email phone")
-      .populate("car", "brand modelName slug images")
+      .populate("car", "brand modelName slug images status")
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
@@ -88,85 +90,44 @@ export const getAdminBookings = tryCatchWrapper(
   },
 );
 
-export const adminCancelBooking = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  const bookingId = req.params.id;
-  const { userId, role } = req.session;
+export const adminCancelBooking = async (req: Request, res: Response) => {
+  const { bookingId } = req.params;
   const { status } = req.body; // new status from request body
 
-  try {
-    const booking = await Booking.findById(bookingId);
+  const booking = await Booking.findById(bookingId);
 
-    if (!booking) {
-      return sendTsRestError(res, 404, "Booking not found");
-    }
-
-    // switch role-based logic
-    if (role === "client") {
-      // clients can only cancel their own bookings
-      if (booking.userId.toString() !== userId) {
-        return sendTsRestError(
-          res,
-          403,
-          "You are not authorised to update this booking"
-        );
-      }
-
-      // clients can only cancel — not set any other status
-      if (status !== "cancelled") {
-        return sendTsRestError(
-          res,
-          403,
-          "Clients can only cancel bookings"
-        );
-      }
-
-      // clients can only cancel within 24 hours of creation
-      const hoursSinceCreation =
-        (Date.now() - new Date(booking.createdAt).getTime()) / (1000 * 60 * 60);
-
-      if (hoursSinceCreation > 24) {
-        return sendTsRestError(
-          res,
-          403,
-          "Cancellation window has expired. Bookings can only be cancelled within 24 hours of creation"
-        );
-      }
-    }
-
-    // status validation for both roles
-    if (["completed", "cancelled", "ongoing"].includes(booking.status)) {
-      return sendTsRestError(
-        res,
-        400,
-        `Booking cannot be updated because it is already ${booking.status}`
-      );
-    }
-
-    // validate new status
-    const allowedStatuses = ["pending", "confirmed", "ongoing", "completed", "cancelled"];
-    if (!status || !allowedStatuses.includes(status)) {
-      return sendTsRestError(
-        res,
-        400,
-        `Invalid status. Allowed values are: ${allowedStatuses.join(", ")}`
-      );
-    }
-
-    // update booking status
-    booking.status = status;
-    await booking.save();
-
-    return sendTsRestSuccess(res, 200, {
-      success: true,
-      message: `Booking status updated to ${status} successfully`,
-      data: booking,
-    });
-
-  } catch (error) {
-    next(error);
+  if (!booking) {
+    return sendTsRestError(res, 404, "Booking not found");
   }
+
+  const unmodifiableStatuses = ["Completed", "Cancelled", "Ongoing"];
+
+  // status validation for both roles
+  if (unmodifiableStatuses.includes(booking.bookingStatus)) {
+    return sendTsRestError(
+      res,
+      400,
+      `Booking cannot be updated because it is already ${booking.bookingStatus}`,
+    );
+  }
+
+  // update booking status
+  booking.bookingStatus = status;
+  await booking.save();
+
+  if (booking.bookingStatus === "Cancelled" && booking.car) {
+    await Car.findByIdAndUpdate(booking.car, { status: "available" });
+    logger.info(
+      `Vehicle bound to booking ${bookingId} has been successfully updated to 'available'.`,
+    );
+  }
+  logger.info(
+    `Admin context modified booking ${bookingId} status to: ${status}`,
+  );
+
+  return sendTsRestSuccess(res, 200, {
+    success: true,
+    message: `Booking status updated to ${status} successfully`,
+    data: booking,
+  });
 };

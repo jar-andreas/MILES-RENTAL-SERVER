@@ -3,6 +3,7 @@ import Booking from "../models/booking.model.js";
 import Car from "../models/car.model.js";
 import tryCatchWrapper from "../lib/tryCatchWrapper.js";
 import { sendTsRestSuccess, sendTsRestError } from "../lib/responseHandler.js";
+import logger from "../config/logger.js";
 
 export const createBooking = tryCatchWrapper(
   async (req: Request, res: Response) => {
@@ -157,6 +158,12 @@ export const cancelBooking = tryCatchWrapper(
       return sendTsRestError(res, 400, "Cancellation window has expired");
     }
     booking.bookingStatus = "Cancelled";
+    if (booking.bookingStatus === "Cancelled" && booking.car) {
+      await Car.findByIdAndUpdate(booking.car, { status: "available" });
+      logger.info(
+        `Vehicle bound to booking ${id} has been successfully updated to 'available'.`,
+      );
+    }
     await booking.save();
     return sendTsRestSuccess(res, 200, {
       message: "Booking cancelled successfully",

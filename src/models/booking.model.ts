@@ -14,7 +14,12 @@ export interface UserBooking extends Document {
   driverOption: boolean;
   driverFee: number;
   serviceFee: number;
-  bookingStatus: "Pending" | "Confirmed" | "Cancelled" | "Completed";
+  bookingStatus:
+    | "Pending"
+    | "Confirmed"
+    | "Cancelled"
+    | "Completed"
+    | "Ongoing";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -86,7 +91,7 @@ const BookingSchema = new Schema<UserBooking>(
       type: Number,
       default: 25,
     },
-    
+
     serviceFee: {
       type: Number,
       default: 10,
@@ -94,7 +99,7 @@ const BookingSchema = new Schema<UserBooking>(
 
     bookingStatus: {
       type: String,
-      enum: ["Pending", "Confirmed", "Cancelled", "Completed"],
+      enum: ["Pending", "Confirmed", "Cancelled", "Completed", "Ongoing"],
       default: "Pending",
     },
   },
