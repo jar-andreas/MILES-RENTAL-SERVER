@@ -298,3 +298,25 @@ export const validateBookingSchema = z
     message: "Return date must be after pickup date",
     path: ["returnDate"],
   });
+
+export const ValidateVerifyPaymentSchema = z.object({
+  reference: z.string(),
+});
+
+export const validateAdminNewBookingSchema = validateBookingSchema.merge(
+  z.object({
+    fullname: z.string().min(3, "Full name must be at least 3 characters long"),
+    phone: z
+      .string()
+      .min(1, "Phone is required")
+      .refine(
+        (num) => num === "" || /^\+\d{10,15}$/.test(num),
+        "Invalid phone number",
+      ),
+    email: z
+      .string({ message: "Email address is required" })
+      .email("Please enter a valid email address")
+      .trim()
+      .toLowerCase(),
+  }),
+);
