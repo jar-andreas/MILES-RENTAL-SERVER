@@ -131,3 +131,62 @@ export const adminCancelBooking = async (req: Request, res: Response) => {
     data: booking,
   });
 };
+
+export const adminMarkBookingCompleted = tryCatchWrapper(
+  async (req: Request, res: Response) => {
+    const { bookingId } = req.params;
+
+    const booking = await Booking.findById(bookingId);
+    if (!booking) {
+      return sendTsRestError(res, 404, "Booking not found");
+    }
+
+    const validPreviousStatuses = ["Confirmed", "Ongoing"];
+
+    if (!validPreviousStatuses.includes(booking.bookingStatus)) {
+      return sendTsRestError(
+        res,
+        400,
+        `Cannot mark a ${booking.bookingStatus} booking as completed.`,
+      );
+    }
+
+    // Time Enforcement Guard Gate
+
+    // 1. Get a clean "YYYY-MM-DD" local date string from Mongoose directly
+    const formattedReturnDate = booking.returnDate.toLocaleDateString("en-CA");
+
+    // 2. Combine it with the 12-hour time string ("09:00 PM")
+    const scheduledReturnDateTime = new Date(
+      `${formattedReturnDate} ${booking.returnTime}`,
+    );
+    
+     // 3. Block if the admin tries to close it early
+    const currentDateTime = new Date();
+    if (currentDateTime < scheduledReturnDateTime) {
+      return sendTsRestError(
+        res,
+        400,
+        `Cannot complete booking yet. The scheduled rental return window closes on ${formattedReturnDate} at ${booking.returnTime}.`,
+      );
+    }
+
+    booking.bookingStatus = "Completed";
+    await booking.save();
+
+    if (booking.car) {
+      await Car.findByIdAndUpdate(booking.car, { status: "available" });
+      logger.info(
+        `Vehicle bound to booking ${bookingId} has been successfully released back to 'available'.`,
+      );
+    }
+
+    logger.info(`Admin context successfully completed booking ${bookingId}`);
+
+    return sendTsRestSuccess(res, 200, {
+      success: true,
+      message: `Booking ${bookingId} has been marked as completed`,
+      booking,
+    });
+  },
+);

@@ -64,7 +64,7 @@ export const createBooking = tryCatchWrapper(
     // Look for existing bookings for this car that overlap with the new dates
     const existingBooking = await Booking.findOne({
       car,
-      bookingStatus: { $ne: "Cancelled" }, // Ignore cancelled bookings
+      bookingStatus: { $nin: ["Cancelled", "Completed"] },
       $or: [{ pickupDate: { $lte: toReturn }, returnDate: { $gte: pickUp } }],
     });
 
@@ -104,8 +104,7 @@ export const getMyBookings = tryCatchWrapper(
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 10;
 
-    const skip = ( page - 1) * limit
-
+    const skip = (page - 1) * limit;
 
     const totalBookings = await Booking.countDocuments({
       user: userId,
@@ -136,7 +135,7 @@ export const getMyBookings = tryCatchWrapper(
       limit,
       totalBookings,
       totalPages: Math.ceil(totalBookings / limit),
-        
+
       count: bookings.length,
       bookings,
     });
