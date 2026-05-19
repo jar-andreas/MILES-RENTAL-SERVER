@@ -100,13 +100,26 @@ export const getMyBookings = tryCatchWrapper(
   async (req: Request, res: Response) => {
     const userId = req.session.userId;
 
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+
+    const skip = ( page - 1) * limit
+
+
+    const totalBookings = await Booking.countDocuments({
+      user: userId,
+    });
+
     const bookings = await Booking.find({
       user: userId,
     })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
       .populate("car")
       .populate("user", "firstName lastName email")
-      .sort({ createdAt: -1 }) // Show newest bookings first
       .lean();
+
     // 2. Handle empty states gracefully
     if (!bookings || bookings.length === 0) {
       return sendTsRestSuccess(res, 200, {
@@ -117,6 +130,12 @@ export const getMyBookings = tryCatchWrapper(
     }
     return sendTsRestSuccess(res, 200, {
       success: true,
+
+      page,
+      limit,
+      totalBookings,
+      totalPages: Math.ceil(totalBookings / limit),
+        
       count: bookings.length,
       bookings,
     });
