@@ -15,9 +15,15 @@ export const getAdminBookings = tryCatchWrapper(
     const pickupDate = req.query.pickupDate as string | undefined;
     const returnDate = req.query.returnDate as string | undefined;
 
-    const matchState: any = {
-      ...(bookingStatus && { bookingStatus }),
-    };
+    const matchState: any = {};
+
+    // ✅ Clean Regex matching instead of manual string transformation
+    if (bookingStatus) {
+      matchState.bookingStatus = { 
+        $regex: `^${bookingStatus.trim()}$`, 
+        $options: "i" 
+      };
+    }
 
     if (pickupDate) {
       matchState.pickupDate = {
@@ -36,12 +42,14 @@ export const getAdminBookings = tryCatchWrapper(
     if (query) {
       const sanitizeQuery = query.replace(/[^\w\s]/gi, "");
       const regex = { $regex: sanitizeQuery, $options: "i" };
+      
+      const User = (await import("../models/user.model.js")).default;
       const getUsers = await User.find({
         $or: [{ firstName: regex }, { lastName: regex }],
       })
         .select("_id")
         .lean();
-      console.log("aa", getUsers);
+        
       const matchUserIds = getUsers.map((user) => user._id);
 
       matchState.$or = [
@@ -50,6 +58,8 @@ export const getAdminBookings = tryCatchWrapper(
         { user: { $in: matchUserIds } },
       ];
     }
+
+    const Booking = (await import("../models/booking.model.js")).default;
 
     const bookings = await Booking.find(matchState)
       .populate("user", "firstName lastName email phone")
@@ -61,18 +71,11 @@ export const getAdminBookings = tryCatchWrapper(
 
     const total = await Booking.countDocuments(matchState);
 
-    const pendingOrders = await Booking.find({
-      bookingStatus: "Pending",
-    });
-    const confirmedOrders = await Booking.find({
-      bookingStatus: "Confirmed",
-    });
-    const completedOrders = await Booking.find({
-      bookingStatus: "Completed",
-    });
-    const cancelledOrders = await Booking.find({
-      bookingStatus: "Cancelled",
-    });
+    const pendingOrders = await Booking.find({ bookingStatus: "Pending" });
+    const confirmedOrders = await Booking.find({ bookingStatus: "Confirmed" });
+    const completedOrders = await Booking.find({ bookingStatus: "Completed" });
+    const cancelledOrders = await Booking.find({ bookingStatus: "Cancelled" });
+
     return sendTsRestSuccess(res as any, 200, {
       pendingOrders: pendingOrders.length,
       confirmedOrders: confirmedOrders.length,
@@ -89,7 +92,6 @@ export const getAdminBookings = tryCatchWrapper(
     });
   },
 );
-
 export const adminCancelBooking = tryCatchWrapper(
   async (req: Request, res: Response) => {
     const { bookingId } = req.params;
