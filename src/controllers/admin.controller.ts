@@ -90,47 +90,48 @@ export const getAdminBookings = tryCatchWrapper(
   },
 );
 
-export const adminCancelBooking = async (req: Request, res: Response) => {
-  const { bookingId } = req.params;
-  const { status } = req.body; // new status from request body
+export const adminCancelBooking = tryCatchWrapper(
+  async (req: Request, res: Response) => {
+    const { bookingId } = req.params;
 
-  const booking = await Booking.findById(bookingId);
+    const booking = await Booking.findById(bookingId);
 
-  if (!booking) {
-    return sendTsRestError(res, 404, "Booking not found");
-  }
+    if (!booking) {
+      return sendTsRestError(res, 404, "Booking not found");
+    }
 
-  const unmodifiableStatuses = ["Completed", "Cancelled", "Ongoing"];
+    const unmodifiableStatuses = ["Completed", "Cancelled", "Ongoing"];
 
-  // status validation for both roles
-  if (unmodifiableStatuses.includes(booking.bookingStatus)) {
-    return sendTsRestError(
-      res,
-      400,
-      `Booking cannot be updated because it is already ${booking.bookingStatus}`,
-    );
-  }
+    // status validation for both roles
+    if (unmodifiableStatuses.includes(booking.bookingStatus)) {
+      return sendTsRestError(
+        res,
+        400,
+        `Booking cannot be updated because it is already ${booking.bookingStatus}`,
+      );
+    }
 
-  // update booking status
-  booking.bookingStatus = status;
-  await booking.save();
+    // update booking status
+    booking.bookingStatus = "Cancelled";
+    await booking.save();
 
-  if (booking.bookingStatus === "Cancelled" && booking.car) {
-    await Car.findByIdAndUpdate(booking.car, { status: "available" });
+    if (booking.bookingStatus === "Cancelled" && booking.car) {
+      await Car.findByIdAndUpdate(booking.car, { status: "available" });
+      logger.info(
+        `Vehicle bound to booking ${bookingId} has been successfully updated to 'available'.`,
+      );
+    }
     logger.info(
-      `Vehicle bound to booking ${bookingId} has been successfully updated to 'available'.`,
+      `Admin context modified booking ${bookingId} status to: Cancelled`,
     );
-  }
-  logger.info(
-    `Admin context modified booking ${bookingId} status to: ${status}`,
-  );
 
-  return sendTsRestSuccess(res, 200, {
-    success: true,
-    message: `Booking status updated to ${status} successfully`,
-    data: booking,
-  });
-};
+    return sendTsRestSuccess(res, 200, {
+      success: true,
+      message: `Booking status updated to Cancelled successfully`,
+      data: booking,
+    });
+  },
+);
 
 export const adminMarkBookingCompleted = tryCatchWrapper(
   async (req: Request, res: Response) => {
@@ -160,8 +161,8 @@ export const adminMarkBookingCompleted = tryCatchWrapper(
     const scheduledReturnDateTime = new Date(
       `${formattedReturnDate} ${booking.returnTime}`,
     );
-    
-     // 3. Block if the admin tries to close it early
+
+    // 3. Block if the admin tries to close it early
     const currentDateTime = new Date();
     if (currentDateTime < scheduledReturnDateTime) {
       return sendTsRestError(
