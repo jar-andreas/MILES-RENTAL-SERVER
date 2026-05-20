@@ -28,5 +28,6 @@ router.get(
   isAdmin,
   getAdminSingleBooking,
 );
+router.post("/book_ride", isAuthenticated, isAdmin, adminBookRide);
 
 export default router;
