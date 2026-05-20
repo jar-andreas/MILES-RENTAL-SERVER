@@ -3,6 +3,7 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface UserBooking extends Document {
   user: mongoose.Types.ObjectId;
   car: mongoose.Types.ObjectId;
+  payment: mongoose.Types.ObjectId;
   pickupLocation: string;
   returnLocation: string;
   pickupDate: Date;
@@ -36,6 +37,10 @@ const BookingSchema = new Schema<UserBooking>(
       type: Schema.Types.ObjectId,
       ref: "Car",
       required: true,
+    },
+    payment: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Payment", // ✅ Tells Mongoose exactly which collection to pull from
     },
 
     pickupLocation: {

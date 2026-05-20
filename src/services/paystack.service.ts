@@ -105,10 +105,12 @@ export class PaystackService {
       const response = await getPaystack().get(
         `/transaction/verify/${data.reference}`,
       );
+
       // 2. Security Check: Only proceed if status is 'success'
       if (response.data.status && response.data.data.status === "success") {
         const tx = response.data.data;
         const metadata = tx.metadata;
+
         // Dynamic imports to prevent circular dependencies
         const Payment = (await import("../models/payment.model.js")).default;
         const Booking = (await import("../models/booking.model.js")).default;
@@ -123,21 +125,23 @@ export class PaystackService {
           status: "success" as const,
           reference: tx.reference,
           paidAt: new Date(),
-          paystackDetails: tx, // Storing full response for audit
+          paystackDetails: tx,
         };
+
         // 1. Update/Create Payment Record
         const payment = await Payment.findOneAndUpdate(
-          {
-            reference: tx.reference,
-          },
+          { reference: tx.reference },
           paymentUpdate,
           { upsert: true, returnDocument: "after" },
         );
-        // 2. Update Booking & Car Status
+
+        // 2. Update Booking & Car Status (Tying the relationship here! 🌟)
         await Booking.findByIdAndUpdate(metadata.bookingId, {
+          payment: payment?._id, // ✅ THIS SEALS THE LINK FOR YOUR POPULATE CALL!
           paymentStatus: "Paid",
           bookingStatus: "Confirmed",
         });
+
         await Car.findByIdAndUpdate(metadata.carId, { status: "booked" });
 
         // 3. Trigger the email side-effect

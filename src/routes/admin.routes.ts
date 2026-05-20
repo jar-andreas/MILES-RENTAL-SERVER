@@ -4,6 +4,7 @@ import {
   adminCancelBooking,
   adminMarkBookingCompleted,
   getAdminBookings,
+  getAdminSingleBooking,
 } from "../controllers/admin.controller.js";
 
 const router = Router();
@@ -20,6 +21,12 @@ router.post(
   isAuthenticated,
   isAdmin,
   adminMarkBookingCompleted,
+);
+router.get(
+  "/single_booking/:bookingId",
+  isAuthenticated,
+  isAdmin,
+  getAdminSingleBooking,
 );
 
 export default router;

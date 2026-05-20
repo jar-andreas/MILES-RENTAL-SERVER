@@ -1,9 +1,9 @@
 import User from "../models/user.model.js";
+import Car from "../models/car.model.js";
 import Booking from "../models/booking.model.js";
 import tryCatchWrapper from "../lib/tryCatchWrapper.js";
 import { sendTsRestError, sendTsRestSuccess } from "../lib/responseHandler.js";
 import { NextFunction, Request, Response } from "express";
-import Car from "../models/car.model.js";
 import logger from "../config/logger.js";
 
 export const getAdminBookings = tryCatchWrapper(
@@ -19,9 +19,9 @@ export const getAdminBookings = tryCatchWrapper(
 
     // ✅ Clean Regex matching instead of manual string transformation
     if (bookingStatus) {
-      matchState.bookingStatus = { 
-        $regex: `^${bookingStatus.trim()}$`, 
-        $options: "i" 
+      matchState.bookingStatus = {
+        $regex: `^${bookingStatus.trim()}$`,
+        $options: "i",
       };
     }
 
@@ -42,14 +42,14 @@ export const getAdminBookings = tryCatchWrapper(
     if (query) {
       const sanitizeQuery = query.replace(/[^\w\s]/gi, "");
       const regex = { $regex: sanitizeQuery, $options: "i" };
-      
+
       const User = (await import("../models/user.model.js")).default;
       const getUsers = await User.find({
         $or: [{ firstName: regex }, { lastName: regex }],
       })
         .select("_id")
         .lean();
-        
+
       const matchUserIds = getUsers.map((user) => user._id);
 
       matchState.$or = [
@@ -60,10 +60,16 @@ export const getAdminBookings = tryCatchWrapper(
     }
 
     const Booking = (await import("../models/booking.model.js")).default;
+    const PaymentModel = (await import("../models/payment.model.js")).default;
 
     const bookings = await Booking.find(matchState)
       .populate("user", "firstName lastName email phone")
       .populate("car", "brand modelName slug images status")
+      .populate({
+        path: "payment",
+        model: PaymentModel,
+        select: "paymentMethod reference paidAt",
+      })
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
@@ -189,6 +195,34 @@ export const adminMarkBookingCompleted = tryCatchWrapper(
     return sendTsRestSuccess(res, 200, {
       success: true,
       message: `Booking ${bookingId} has been marked as completed`,
+      booking,
+    });
+  },
+);
+
+export const getAdminSingleBooking = tryCatchWrapper(
+  async (req: Request, res: Response) => {
+    const { bookingId } = req.params;
+
+    // 1. Manually import the model object inline so it definitely executes
+    const PaymentModel = (await import("../models/payment.model.js")).default;
+
+    const booking = await Booking.findById(bookingId)
+      .populate("car")
+      .populate("user")
+      .populate({
+        path: "payment",
+        model: PaymentModel,
+        select: "paymentMethod reference paidAt",
+      })
+      .lean();
+
+    if (!booking) {
+      return sendTsRestError(res, 404, "Booking not found");
+    }
+
+    return sendTsRestSuccess(res as any, 200, {
+      success: true,
       booking,
     });
   },
