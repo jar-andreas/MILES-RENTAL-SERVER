@@ -1,5 +1,4 @@
 import mongoose, { Schema, Document } from "mongoose";
-import { string } from "zod";
 
 export interface DriverInfo extends Document {
     booking: mongoose.Types.ObjectId;
