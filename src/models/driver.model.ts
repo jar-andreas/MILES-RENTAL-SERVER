@@ -7,7 +7,7 @@ export interface DriverInfo extends Document {
     email: String;
     baseCity: String;
     yearsOfExperience: Number;
-    languages: "english" | "yoruba" | "igbo" | "hausa" | "french" | "pidgin";
+    languages: "en" | "yoruba" | "igbo" | "hausa" | "fr" | "pidgin";
     rating: Number;
     trips: Number;
     licenseNumber: String;
@@ -51,7 +51,7 @@ const DriverSchema = new Schema<DriverInfo>(
 
         languages: {
             type: String,
-            enum : ["en", "yoruba", "igbo", "hausa", "french", "pidgin"],
+            enum : ["en", "yoruba", "igbo", "hausa", "fr", "pidgin"],
             required: true,
         },
 
