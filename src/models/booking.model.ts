@@ -3,6 +3,7 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface UserBooking extends Document {
   user: mongoose.Types.ObjectId;
   car: mongoose.Types.ObjectId;
+  payment: mongoose.Types.ObjectId;
   pickupLocation: string;
   returnLocation: string;
   pickupDate: Date;
@@ -14,7 +15,14 @@ export interface UserBooking extends Document {
   driverOption: boolean;
   driverFee: number;
   serviceFee: number;
-  bookingStatus: "Pending" | "Confirmed" | "Cancelled" | "Completed";
+  bookingStatus:
+    | "Pending"
+    | "Confirmed"
+    | "Cancelled"
+    | "Completed"
+    | "Ongoing";
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const BookingSchema = new Schema<UserBooking>(
@@ -29,6 +37,10 @@ const BookingSchema = new Schema<UserBooking>(
       type: Schema.Types.ObjectId,
       ref: "Car",
       required: true,
+    },
+    payment: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Payment", // ✅ Tells Mongoose exactly which collection to pull from
     },
 
     pickupLocation: {
@@ -56,12 +68,14 @@ const BookingSchema = new Schema<UserBooking>(
     pickupTime: {
       type: String,
       required: true,
+      default: "09:00 AM",
       trim: true,
     },
 
     returnTime: {
       type: String,
       required: true,
+      default: "12:00 PM",
       trim: true,
     },
 
@@ -84,7 +98,7 @@ const BookingSchema = new Schema<UserBooking>(
       type: Number,
       default: 25,
     },
-    
+
     serviceFee: {
       type: Number,
       default: 10,
@@ -92,7 +106,7 @@ const BookingSchema = new Schema<UserBooking>(
 
     bookingStatus: {
       type: String,
-      enum: ["Pending", "Confirmed", "Cancelled", "Completed"],
+      enum: ["Pending", "Confirmed", "Cancelled", "Completed", "Ongoing"],
       default: "Pending",
     },
   },

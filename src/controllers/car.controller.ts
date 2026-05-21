@@ -202,3 +202,15 @@ export const getTrendingCars = tryCatchWrapper(
     });
   },
 );
+
+export const getCar = tryCatchWrapper(async (req: Request, res: Response) => {
+  const cars = await Car.find().select("modelName slug").lean();
+
+  if (cars.length === 0) {
+    return sendTsRestError(res, 404, "No cars found in the database");
+  }
+  return sendTsRestSuccess(res, 200, {
+    message: "Car list retrieved Successfully",
+    data: cars,
+  });
+});

@@ -276,7 +276,20 @@ export const validateBookingSchema = z
         message: "Pickup date must be a valid date",
       })
       .refine(
-        (val) => new Date(val) >= new Date(new Date().setHours(0, 0, 0, 0)),
+        (val) => {
+          // 1. Cleanly isolate just the YYYY-MM-DD part of the incoming value
+          const inputDateString = new Date(val).toISOString().split("T")[0];
+
+          // 2. Get today's calendar date string using your local timezone context
+          const today = new Date();
+          const year = today.getFullYear();
+          const month = String(today.getMonth() + 1).padStart(2, "0");
+          const day = String(today.getDate()).padStart(2, "0");
+          const todayDateString = `${year}-${month}-${day}`;
+
+          // 3. Directly compare strings lexicographically ("2026-05-19" >= "2026-05-19")
+          return inputDateString >= todayDateString;
+        },
         {
           message: "Pickup date cannot be in the past",
         },
@@ -288,21 +301,39 @@ export const validateBookingSchema = z
         message: "Return date must be a valid date",
       }),
 
-    pickupTime: z
-      .string({ message: "Pickup time is required" })
-      .regex(
-        /^(0?[1-9]|1[0-2]):[0-5]\d\s?(AM|PM|am|pm)$/,
-        "Pickup time must be in HH:MM AM/PM format (e.g., 10:00 AM)",
-      ),
+    pickupTime: z.string({ message: "Pickup time is required" }).optional(),
 
-    returnTime: z
-      .string({ message: "Return time is required" })
-      .regex(
-        /^(0?[1-9]|1[0-2]):[0-5]\d\s?(AM|PM|am|pm)$/,
-        "Return time must be in HH:MM AM/PM format (e.g., 04:00 PM)",
-      ),
+    returnTime: z.string({ message: "Return time is required" }).optional(),
 
     driverOption: z.boolean().default(false),
+  })
+  .refine((data) => new Date(data.returnDate) > new Date(data.pickupDate), {
+    message: "Return date must be after pickup date",
+    path: ["returnDate"],
+  });
+
+// FIXED: Cleaned up the .merge() crash over refinements by destructuring the core shapes safely inside the body block
+export const validateAdminNewBookingSchema = z
+  .object({
+    ...validateBookingSchema.shape,
+    fullname: z.string().min(3, "Full name must be at least 3 characters long"),
+    phone: z
+      .string()
+      .min(1, "Phone is required")
+      .refine(
+        (num) => num === "" || /^\+\d{10,15}$/.test(num),
+        "Invalid phone number",
+      ),
+    email: z
+      .string({ message: "Email address is required" })
+      .email("Please enter a valid email address")
+      .trim()
+      .toLowerCase(),
+    paymentMethod: z
+      .string({ message: "Payment method is required" })
+      .refine((val) => val === "Pay_with_Bank_Transfer", {
+        message: "Admin bookings must use 'Pay_with_Bank_Transfer' only",
+      }),
   })
   .refine((data) => new Date(data.returnDate) > new Date(data.pickupDate), {
     message: "Return date must be after pickup date",
