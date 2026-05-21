@@ -5,7 +5,7 @@ import tryCatchWrapper from "../lib/tryCatchWrapper.js";
 import { sendTsRestError, sendTsRestSuccess } from "../lib/responseHandler.js";
 import { NextFunction, Request, Response } from "express";
 import logger from "../config/logger.js";
-import { sendEmail } from "../email/send-email.js";
+import { sendBookingCreatedEmail } from "../email/send-email.js";
 import Payment from "../models/payment.model.js";
 
 export const getAdminBookings = tryCatchWrapper(
@@ -70,7 +70,7 @@ export const getAdminBookings = tryCatchWrapper(
       .populate({
         path: "payment",
         model: PaymentModel,
-        select: "paymentMethod reference paidAt",
+        select: "paymentMethod reference paidAt amount",
       })
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
@@ -100,9 +100,6 @@ export const getAdminBookings = tryCatchWrapper(
     });
   },
 );
-
-// ─── Admin: Manually create a booking on behalf of a user
-import { sendBookingCreatedEmail } from "../email/send-email.js";
 
 export const adminBookRide = tryCatchWrapper(
   async (req: Request, res: Response) => {
@@ -349,7 +346,7 @@ export const adminMarkBookingCompleted = tryCatchWrapper(
         `Cannot complete booking yet. The scheduled rental return window closes on ${formattedReturnDate} at ${booking.returnTime}.`,
       );
     }
-
+    const car = (await import("../models/car.model.js")).default;
     booking.bookingStatus = "Completed";
     await booking.save();
 
