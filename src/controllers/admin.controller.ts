@@ -101,18 +101,6 @@ export const getAdminBookings = tryCatchWrapper(
   },
 );
 
-<<<<<<< HEAD
-export const getBookingById = tryCatchWrapper(
-  async (req: Request, res: Response) => {
-    const { id } = req.params; 
-    const booking = await Booking.findById(id).populate("user").populate("car");
-    if (!booking) {
-      return sendTsRestError(res, 404, "Booking not found");
-    }
-    return sendTsRestSuccess(res, 200, {
-      success: true,
-      message: "Booking retrieved successfully",
-=======
 // ─── Admin: Manually create a booking on behalf of a user
 import { sendBookingCreatedEmail } from "../email/send-email.js";
 
@@ -318,45 +306,26 @@ export const adminCancelBooking = tryCatchWrapper(
     return sendTsRestSuccess(res, 200, {
       success: true,
       message: `Booking status updated to Cancelled successfully`,
->>>>>>> 94a97da44078b6b26a0697027d5145c7a7af1e98
       data: booking,
     });
   },
 );
 
-<<<<<<< HEAD
-
-// ─── Mark Booking As Completed (Admin) ───────────────────────────────────────
-
-export const adminMarkBookingCompleted = tryCatchWrapper(
-  async (req: Request, res: Response) => {
-    const { id } = req.params;
-
-    const booking = await Booking.findById(id);
-=======
 export const adminMarkBookingCompleted = tryCatchWrapper(
   async (req: Request, res: Response) => {
     const { bookingId } = req.params;
 
     const booking = await Booking.findById(bookingId);
->>>>>>> 94a97da44078b6b26a0697027d5145c7a7af1e98
     if (!booking) {
       return sendTsRestError(res, 404, "Booking not found");
     }
 
-<<<<<<< HEAD
-    const validPreviousStatuses = ["Confirmed", "Ongoing", "Picked Up"];
-=======
     const validPreviousStatuses = ["Confirmed", "Ongoing"];
->>>>>>> 94a97da44078b6b26a0697027d5145c7a7af1e98
 
     if (!validPreviousStatuses.includes(booking.bookingStatus)) {
       return sendTsRestError(
         res,
         400,
-<<<<<<< HEAD
-        `Cannot mark a ${booking.bookingStatus} booking as completed.`
-=======
         `Cannot mark a ${booking.bookingStatus} booking as completed.`,
       );
     }
@@ -378,24 +347,12 @@ export const adminMarkBookingCompleted = tryCatchWrapper(
         res,
         400,
         `Cannot complete booking yet. The scheduled rental return window closes on ${formattedReturnDate} at ${booking.returnTime}.`,
->>>>>>> 94a97da44078b6b26a0697027d5145c7a7af1e98
       );
     }
 
     booking.bookingStatus = "Completed";
     await booking.save();
 
-<<<<<<< HEAD
-    return sendTsRestSuccess(res, 200, {
-      success: true,
-      message: `Booking ${id} has been marked as completed`,
-      booking,
-    });
-  }
-);
-
-
-=======
     if (booking.car) {
       await Car.findByIdAndUpdate(booking.car, { status: "available" });
       logger.info(
@@ -440,4 +397,3 @@ export const getAdminSingleBooking = tryCatchWrapper(
     });
   },
 );
->>>>>>> 94a97da44078b6b26a0697027d5145c7a7af1e98

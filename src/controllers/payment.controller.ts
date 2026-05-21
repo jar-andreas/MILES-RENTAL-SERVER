@@ -60,8 +60,4 @@ export const handlePaystackWebhook = async (req: Request, res: Response) => {
   } catch (error: any) {
     res.status(200).send("Webhook failed internally, but received");
   }
-<<<<<<< HEAD
 };
-=======
-};
->>>>>>> 94a97da44078b6b26a0697027d5145c7a7af1e98

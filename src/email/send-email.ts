@@ -107,8 +107,6 @@ export const sendPaymentSuccessEmail = async (
     htmlContent,
     textContent: `Payment Confirmed! Amount: ${amount} NGN. Ref: ${reference}`,
   });
-<<<<<<< HEAD
-=======
 };
 
 // ─── 3. Admin Manually Created Booking Template Handler ──────────────────
@@ -216,5 +214,4 @@ export const sendBookingCreatedEmail = async (
     htmlContent,
     textContent: `Hi ${userName}, your booking for ${car.brand} ${car.modelName} has been created. Grand Total: ₦${grandTotal.toLocaleString()}. Reference: ${reference}.`,
   });
->>>>>>> 94a97da44078b6b26a0697027d5145c7a7af1e98
 };
