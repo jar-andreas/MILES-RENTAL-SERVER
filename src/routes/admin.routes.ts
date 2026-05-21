@@ -7,8 +7,8 @@ import {
   getAdminBookings,
   getAdminSingleBooking,
 } from "../controllers/admin.controller.js";
-import { validateFormData } from "src/middleware/formValidate.js";
-import { validateAdminNewBookingSchema } from "src/lib/schemaValidation.js";
+import { validateFormData } from "../middleware/formValidate.js";
+import { validateAdminNewBookingSchema } from "../lib/schemaValidation.js";
 
 const router = Router();
 
