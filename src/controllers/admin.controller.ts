@@ -380,7 +380,7 @@ export const getAdminSingleBooking = tryCatchWrapper(
       .populate({
         path: "payment",
         model: PaymentModel,
-        select: "paymentMethod reference paidAt",
+        select: "paymentMethod reference paidAt amount",
       })
       .lean();
 
