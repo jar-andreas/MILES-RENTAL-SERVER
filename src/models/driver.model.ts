@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from "mongoose";
 import { string } from "zod";
 
 export interface DriverInfo extends Document {
+    booking: mongoose.Types.ObjectId;
     fullName: String;
     phoneNumber: String;
     email: String;
@@ -18,6 +19,12 @@ export interface DriverInfo extends Document {
 
 const DriverSchema = new Schema<DriverInfo>(
     {
+        booking: {
+            type: Schema.Types.ObjectId,
+            ref: "Booking",
+            required: true,
+        },
+
         fullName: {
             type: String,
             required: true,
