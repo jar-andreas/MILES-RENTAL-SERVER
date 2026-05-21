@@ -68,12 +68,14 @@ const BookingSchema = new Schema<UserBooking>(
     pickupTime: {
       type: String,
       required: true,
+      default: "09:00 AM",
       trim: true,
     },
 
     returnTime: {
       type: String,
       required: true,
+      default: "12:00 PM",
       trim: true,
     },
 
