@@ -346,15 +346,15 @@ export const adminMarkBookingCompleted = tryCatchWrapper(
         `Cannot complete booking yet. The scheduled rental return window closes on ${formattedReturnDate} at ${booking.returnTime}.`,
       );
     }
-    const car = (await import("../models/car.model.js")).default;
+
     booking.bookingStatus = "Completed";
     await booking.save();
 
     if (booking.car) {
-      await Car.findByIdAndUpdate(booking.car, { status: "available" });
-      logger.info(
-        `Vehicle bound to booking ${bookingId} has been successfully released back to 'available'.`,
-      );
+      await Car.findByIdAndUpdate(booking.car, {
+        $set: { status: "available" },
+        $inc: { tripsCount: 1 },
+      });
     }
 
     logger.info(`Admin context successfully completed booking ${bookingId}`);
