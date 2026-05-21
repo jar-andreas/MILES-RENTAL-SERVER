@@ -1,7 +1,7 @@
-import tryCatchWrapper from "src/lib/tryCatchWrapper.js";
+import tryCatchWrapper from "../lib/tryCatchWrapper.js";
 import { Request, Response } from "express";
-import { sendTsRestError, sendTsRestSuccess } from "src/lib/responseHandler.js";
-import Driver from "src/models/driver.model.js";
+import { sendTsRestError, sendTsRestSuccess } from "../lib/responseHandler.js";
+import Driver from "../models/driver.model.js";
 
 export const createDriver = tryCatchWrapper(
   async (req: Request, res: Response) => {
