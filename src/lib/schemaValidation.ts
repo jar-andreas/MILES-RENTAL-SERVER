@@ -339,3 +339,70 @@ export const validateAdminNewBookingSchema = z
     message: "Return date must be after pickup date",
     path: ["returnDate"],
   });
+
+export const validateDriverSchema = z.object({
+  fullName: z.string().trim().min(3, {
+    message: "Full name must be at least 3 characters long",
+  }),
+
+  phoneNumber: z
+    .string()
+    .trim()
+    .min(1, {
+      message: "Phone number is required",
+    })
+    .refine((num) => /^\+\d{10,15}$/.test(num), {
+      message: "Invalid phone number",
+    }),
+
+  email: z
+    .string({
+      message: "Email address is required",
+    })
+    .trim()
+    .toLowerCase()
+    .email({
+      message: "Please enter a valid email address",
+    }),
+
+  baseCity: z.string().trim().min(2, {
+    message: "Base city is required",
+  }),
+
+  yearsOfExperience: z
+    .number({
+      message: "Years of experience must be a number",
+    })
+    .min(0, {
+      message: "Years of experience cannot be negative",
+    })
+    .max(60, {
+      message: "Invalid years of experience",
+    }),
+
+  languages: z.enum(["en", "yoruba", "igbo", "hausa", "fr", "pidgin"], {
+    message: "select a language",
+  }),
+  licenseNumber: z.string().trim().min(3, {
+    message: "License number is required",
+  }),
+
+  expiryDate: z
+    .string({
+      message: "Expiry date is required",
+    })
+    .refine((val) => !isNaN(Date.parse(val)), {
+      message: "Expiry date must be valid",
+    })
+    .refine((val) => new Date(val) > new Date(), {
+      message: "License expiry date cannot be in the past",
+    }),
+
+  isVerified: z.boolean().default(false),
+
+  status: z
+    .enum(["available", "on-trip", "off-duty", "inactive"], {
+      message: "select a driver status",
+    })
+    .default("available"),
+});
