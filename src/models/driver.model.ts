@@ -8,13 +8,13 @@ export interface DriverInfo extends Document {
     email: String;
     baseCity: String;
     yearsOfExperience: Number;
-    languages: "EN" | "Yoruba" | "Igbo" | "Hausa" | "Fr" | "Pidgin";
+    languages: "en" | "yoruba" | "igbo" | "hausa" | "fr" | "pidgin";
     rating: Number;
     trips: Number;
     licenseNumber: String;
     expiryDate: Date;
     isVerified: Boolean;
-    status: "Available" | "On-trip" | "Off-duty" | "Inactive";
+    status: "available" | "on-trip" | "off-duty" | "inactive";
 }
 
 const DriverSchema = new Schema<DriverInfo>(
@@ -52,7 +52,7 @@ const DriverSchema = new Schema<DriverInfo>(
 
         languages: {
             type: String,
-            enum : ["En", "Yoruba", "Igbo", "Hausa", "Fr", "Pidgin"],
+            enum : ["en", "yoruba", "igbo", "hausa", "fr", "pidgin"],
             required: true,
         },
 
@@ -84,7 +84,7 @@ const DriverSchema = new Schema<DriverInfo>(
 
         status: {
             type: String,
-            enum: ["Available", "On-trip", "Off-duty", "Inactive"],
+            enum: ["available", "on-trip", "off-duty", "inactive"],
             required: true,
         }
     },
