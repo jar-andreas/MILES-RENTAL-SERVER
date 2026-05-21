@@ -347,7 +347,6 @@ export const validateAdminNewBookingSchema = z
     .min(3, {
       message: "Full name must be at least 3 characters long",
     }),
-
   phoneNumber: z
     .string()
     .trim()
