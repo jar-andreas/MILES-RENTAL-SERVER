@@ -13,7 +13,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": false,
-    "ignoreDeprecations": "6.0",
+    "ignoreDeprecations": "6.0", 
     "baseUrl": ".",
     "types": ["node", "bcrypt"],
     "lib": ["ES2022"],

@@ -301,9 +301,9 @@ export const validateBookingSchema = z
         message: "Return date must be a valid date",
       }),
 
-    pickupTime: z.string({ message: "Pickup time is required" }),
+    pickupTime: z.string({ message: "Pickup time is required" }).optional(),
 
-    returnTime: z.string({ message: "Return time is required" }),
+    returnTime: z.string({ message: "Return time is required" }).optional(),
 
     driverOption: z.boolean().default(false),
   })
@@ -313,28 +313,29 @@ export const validateBookingSchema = z
   });
 
 // FIXED: Cleaned up the .merge() crash over refinements by destructuring the core shapes safely inside the body block
-export const validateAdminNewBookingSchema = z.object({
-  body: z
-    .object({
-      ...validateBookingSchema.shape,
-      fullname: z
-        .string()
-        .min(3, "Full name must be at least 3 characters long"),
-      phone: z
-        .string()
-        .min(1, "Phone is required")
-        .refine(
-          (num) => num === "" || /^\+\d{10,15}$/.test(num),
-          "Invalid phone number",
-        ),
-      email: z
-        .string({ message: "Email address is required" })
-        .email("Please enter a valid email address")
-        .trim()
-        .toLowerCase(),
-    })
-    .refine((data) => new Date(data.returnDate) > new Date(data.pickupDate), {
-      message: "Return date must be after pickup date",
-      path: ["returnDate"],
-    }),
-});
+export const validateAdminNewBookingSchema = z
+  .object({
+    ...validateBookingSchema.shape,
+    fullname: z.string().min(3, "Full name must be at least 3 characters long"),
+    phone: z
+      .string()
+      .min(1, "Phone is required")
+      .refine(
+        (num) => num === "" || /^\+\d{10,15}$/.test(num),
+        "Invalid phone number",
+      ),
+    email: z
+      .string({ message: "Email address is required" })
+      .email("Please enter a valid email address")
+      .trim()
+      .toLowerCase(),
+    paymentMethod: z
+      .string({ message: "Payment method is required" })
+      .refine((val) => val === "Pay_with_Bank_Transfer", {
+        message: "Admin bookings must use 'Pay_with_Bank_Transfer' only",
+      }),
+  })
+  .refine((data) => new Date(data.returnDate) > new Date(data.pickupDate), {
+    message: "Return date must be after pickup date",
+    path: ["returnDate"],
+  });

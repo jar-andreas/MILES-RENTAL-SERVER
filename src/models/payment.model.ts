@@ -69,8 +69,7 @@ const paymentSchema = new Schema<IPayment>(
   },
 );
 
-// Indexing for faster lookups in the admin dashboard
-paymentSchema.index({ reference: 1 });
+
 paymentSchema.index({ status: 1 });
 paymentSchema.index({ userId: 1, bookingId: 1 });
 

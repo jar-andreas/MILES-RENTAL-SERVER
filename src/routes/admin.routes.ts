@@ -1,11 +1,14 @@
 import Router from "express";
 import { isAuthenticated, isAdmin } from "../middleware/auth.middleware.js";
 import {
+  adminBookRide,
   adminCancelBooking,
   adminMarkBookingCompleted,
   getAdminBookings,
   getAdminSingleBooking,
 } from "../controllers/admin.controller.js";
+import { validateFormData } from "../middleware/formValidate.js";
+import { validateAdminNewBookingSchema } from "../lib/schemaValidation.js";
 
 const router = Router();
 
@@ -27,6 +30,13 @@ router.get(
   isAuthenticated,
   isAdmin,
   getAdminSingleBooking,
+);
+router.post(
+  "/admin_create_booking",
+  isAuthenticated,
+  isAdmin,
+  validateFormData(validateAdminNewBookingSchema),
+  adminBookRide,
 );
 
 export default router;
