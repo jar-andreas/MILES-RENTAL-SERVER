@@ -2,6 +2,7 @@ import Router from "express";
 import {
   createDriver,
   getAllDriver,
+  getSingleDriver,
 } from "../controllers/driver.controller.js";
 import { isAdmin, isAuthenticated } from "../middleware/auth.middleware.js";
 import { validateFormData } from "../middleware/formValidate.js";
@@ -18,5 +19,6 @@ router.post(
 );
 
 router.get("/get-all-drivers", isAuthenticated, isAdmin, getAllDriver);
+router.get("/:driverId", isAuthenticated, isAdmin, getSingleDriver);
 
 export default router;

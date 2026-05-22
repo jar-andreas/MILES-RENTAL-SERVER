@@ -127,3 +127,30 @@ export const getAllDriver = tryCatchWrapper(
     });
   },
 );
+
+export const getSingleDriver = tryCatchWrapper(
+  async (req: Request, res: Response) => {
+    const { driverId } = req.params;
+
+    // 1. Find driver by ID and populate the linked booking (if any)
+    const driver = await Driver.findById(driverId)
+      .populate({
+        path: "booking",
+        select:
+          "pickupLocation returnLocation pickupDate returnDate bookingStatus totalPrice",
+      })
+      .lean();
+
+    // 2. Guard: driver must exist
+    if (!driver) {
+      return sendTsRestError(res, 404, "Driver not found");
+    }
+
+    // 3. Return the driver record
+    return sendTsRestSuccess(res as any, 200, {
+      success: true,
+      message: "Driver retrieved successfully",
+      driver,
+    });
+  },
+);
