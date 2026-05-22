@@ -380,9 +380,10 @@ export const validateDriverSchema = z.object({
       message: "Invalid years of experience",
     }),
 
-  languages: z.enum(["en", "yoruba", "igbo", "hausa", "fr", "pidgin"], {
-    message: "select a language",
-  }),
+  languages: z
+    .array(z.enum(["en", "yoruba", "igbo", "hausa", "fr", "pidgin"]))
+    .min(1, { message: "select a language" }),
+
   licenseNumber: z.string().trim().min(3, {
     message: "License number is required",
   }),
@@ -405,4 +406,10 @@ export const validateDriverSchema = z.object({
       message: "select a driver status",
     })
     .default("available"),
+  trips: z
+    .number({
+      message: "Trips must be a valid number",
+    })
+    .min(0, { message: "Trips cannot be negative" })
+    .default(0),
 });

@@ -54,3 +54,76 @@ export const createDriver = tryCatchWrapper(
     });
   },
 );
+
+export const getAllDriver = tryCatchWrapper(
+  async (req: Request, res: Response) => {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const query = (req.query.query as string | undefined) || "";
+    const status = req.query.status as string | undefined;
+
+    if (page < 1 || limit < 1) {
+      return sendTsRestError(
+        res,
+        400,
+        "Page and limit parameters must be positive integers",
+      );
+    }
+
+    const skipOffset = (page - 1) * limit;
+
+    // Build MongoDB matchStage (Flow Step 2 & 3)
+    const matchStage: Record<string, any> = {};
+
+    if (query.trim() !== "") {
+      const sanitizeQuery = query.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
+      const searchRegex = { $regex: sanitizeQuery, $options: "i" };
+      matchStage.$or = [
+        { fullName: searchRegex },
+        { email: searchRegex },
+        { phoneNumber: searchRegex },
+        { licenseNumber: searchRegex },
+      ];
+    }
+
+    if (status && status?.trim() !== "") {
+      matchStage.status = {
+        $regex: `^${status.trim()}$`,
+        $options: "i",
+      };
+    }
+    const driver = await Driver.find(matchStage)
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip(skipOffset)
+      .lean();
+
+    const total = await Driver.countDocuments(matchStage);
+
+    const availableDrivers = await Driver.countDocuments({
+      status: "available",
+    });
+    const onTripDrivers = await Driver.countDocuments({ status: "on-trip" });
+    const offDutyDrivers = await Driver.countDocuments({ status: "off-duty" });
+    const inactiveDrivers = await Driver.countDocuments({ status: "inactive" });
+
+    return sendTsRestSuccess(res as any, 200, {
+      success: true,
+      message: "Drivers found",
+      body: {
+        driver,
+        availableDrivers: availableDrivers,
+        onTripDrivers: onTripDrivers,
+        offDutyDrivers: offDutyDrivers,
+        inactiveDrivers: inactiveDrivers,
+        meta: {
+          currentPage: Number(page),
+          limit: Number(limit),
+          total,
+          totalPages: Math.ceil(total / Number(limit)) || 1,
+          hasMore: skipOffset + driver.length < total,
+        },
+      },
+    });
+  },
+);
