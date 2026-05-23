@@ -2,6 +2,7 @@ import tryCatchWrapper from "../lib/tryCatchWrapper.js";
 import { Request, Response } from "express";
 import { sendTsRestError, sendTsRestSuccess } from "../lib/responseHandler.js";
 import Driver from "../models/driver.model.js";
+import Booking from "src/models/booking.model.js";
 
 export const createDriver = tryCatchWrapper(
   async (req: Request, res: Response) => {
@@ -127,3 +128,80 @@ export const getAllDriver = tryCatchWrapper(
     });
   },
 );
+
+export const assignDriver = tryCatchWrapper(
+  async (req: Request, res: Response) => {
+    const { bookingId } = req.params;
+    const { driverId } = req.params
+
+    // find booking
+    const booking = await Booking.findById(bookingId);
+    if(!booking) {
+      return sendTsRestError(
+        res,
+        404,
+        "Booking not found"
+      );
+    }
+
+    // find driver
+    const driver = await Driver.findById(driverId);
+    if(!driver) {
+      return sendTsRestError(
+        res,
+        404,
+        "Driver not found"
+      );
+    }
+
+    // check if booking requested for driver option
+    if(!booking.driverOption){
+      return sendTsRestError(
+        res,
+        400,
+        "This booking does not requires a driver"
+      );
+    }
+
+    // prevent assigning unavailable driver
+    if(driver.status !== "available"){
+      return sendTsRestError(
+        res,
+        400,
+        "Driver is not available"
+      );
+    }
+
+    // prevent assigning driver twice
+    if(driver.booking) {
+      return sendTsRestError(
+        res,
+        400,
+        "Driver alreadt assigned to a booking"
+      );
+    }
+    
+    // assign booking to driver
+    driver.booking = booking._id;
+
+    // update driver status
+    driver.status = "on-trip";
+
+    // update booking status
+    booking.bookingStatus = "Confrimed";
+
+    // save changes
+    await driver.save();
+    await booking.save();
+
+    // populate booking details inside driver
+    await driver.populate("booking");
+
+    return sendTsRestSuccess(
+      res,
+      200,
+      "Driver assigned successfully"
+    );
+  }
+);
+
