@@ -103,6 +103,10 @@ export const getAdminBookings = tryCatchWrapper(
 
 export const adminBookRide = tryCatchWrapper(
   async (req: Request, res: Response) => {
+    console.log("=== DEBUG: adminCreateBooking Payload ===");
+    console.log("Headers Content-Type:", req.headers["content-type"]);
+    console.log("Body Data:", JSON.stringify(req.body, null, 2));
+    console.log("==========================================");
     const {
       car,
       fullname,
@@ -128,8 +132,8 @@ export const adminBookRide = tryCatchWrapper(
       !returnLocation ||
       !pickupDate ||
       !returnDate ||
-      pickupTime ||
-      returnTime
+      !pickupTime ||
+      !returnTime
     ) {
       return sendTsRestError(res, 400, "All input fields are required");
     }
