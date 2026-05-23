@@ -1,3 +1,4 @@
+// @ts-ignore: Ignore missing mongoose module/type declarations in this environment
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface DriverInfo extends Document {
