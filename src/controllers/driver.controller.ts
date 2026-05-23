@@ -244,7 +244,6 @@ export const assignDriver = tryCatchWrapper(
       message: "Driver assigned successfully",
       body: {
         booking,
-        driver,
       },
     });
   },
