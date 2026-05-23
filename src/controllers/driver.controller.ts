@@ -159,76 +159,71 @@ export const getSingleDriver = tryCatchWrapper(
 export const assignDriver = tryCatchWrapper(
   async (req: Request, res: Response) => {
     const { bookingId } = req.params;
-    const { driverId } = req.params
+    const { driverId } = req.params;
 
-    // find booking
-    const booking = await Booking.findById(bookingId);
-    if(!booking) {
-      return sendTsRestError(
-        res,
-        404,
-        "Booking not found"
-      );
-    }
+    // 2. Fetch both records in parallel to minimize DB round-trips
+    const [booking, driver] = await Promise.all([
+      Booking.findById(bookingId),
+      Driver.findById(driverId),
+    ]);
 
-    // find driver
-    const driver = await Driver.findById(driverId);
-    if(!driver) {
-      return sendTsRestError(
-        res,
-        404,
-        "Driver not found"
-      );
-    }
+    if (!booking) return sendTsRestError(res, 404, "Booking not found");
+    if (!driver) return sendTsRestError(res, 404, "Driver not found");
 
     // check if booking requested for driver option
-    if(!booking.driverOption){
+    if (!booking.driverOption) {
       return sendTsRestError(
         res,
         400,
-        "This booking does not requires a driver"
+        "This booking does not require a driver",
+      );
+    }
+
+    // 4. Prevent re-assigning if a driver is already attached to this booking
+    if (booking.driver) {
+      return sendTsRestError(
+        res,
+        400,
+        "This booking already has a driver assigned",
       );
     }
 
     // prevent assigning unavailable driver
-    if(driver.status !== "available"){
-      return sendTsRestError(
-        res,
-        400,
-        "Driver is not available"
-      );
+    if (driver.status !== "available") {
+      return sendTsRestError(res, 400, "Driver is not available");
     }
 
     // prevent assigning driver twice
-    if(driver.booking) {
-      return sendTsRestError(
-        res,
-        400,
-        "Driver alreadt assigned to a booking"
-      );
+    if (driver.booking) {
+      return sendTsRestError(res, 400, "Driver already assigned to a booking");
     }
-    
+
     // assign booking to driver
     driver.booking = booking._id;
 
-    // update driver status
-    driver.status = "on-trip";
+    //link the driver to the Booking
+    booking.driver = driver._id;
+
+    // driver status should still remain available for instance if this booking is scheduled for next Tuesday, you just marked that driver as unavailable for the next 4 days!
+    driver.status = "available";
 
     // update booking status
-    booking.bookingStatus = "Confrimed";
+    booking.bookingStatus = "Confirmed";
 
     // save changes
-    await driver.save();
-    await booking.save();
+    await Promise.all([booking.save(), driver.save()]);
 
     // populate booking details inside driver
-    await driver.populate("booking");
+    await Promise.all([
+      driver.populate("booking"),
+      booking.populate("driver"),
+    ]);
 
-    return sendTsRestSuccess(
-      res,
-      200,
-      "Driver assigned successfully"
-    );
-  }
+    return sendTsRestSuccess(res, 200, {
+      message: "Driver assigned successfully",
+      body: {
+        booking, // This object now includes the fully detailed driver profile inside it!
+      },
+    });
+  },
 );
-
