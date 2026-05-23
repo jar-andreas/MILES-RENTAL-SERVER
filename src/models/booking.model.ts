@@ -4,6 +4,7 @@ export interface UserBooking extends Document {
   user: mongoose.Types.ObjectId;
   car: mongoose.Types.ObjectId;
   payment: mongoose.Types.ObjectId;
+  driver: mongoose.Types.ObjectId;
   pickupLocation: string;
   returnLocation: string;
   pickupDate: Date;
@@ -42,7 +43,11 @@ const BookingSchema = new Schema<UserBooking>(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Payment", // ✅ Tells Mongoose exactly which collection to pull from
     },
-
+    driver: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Driver", // 👈 This MUST match your exact Mongoose model string name
+      default: null, // Starts as null until an admin explicitly assigns a driver
+    },
     pickupLocation: {
       type: String,
       required: true,

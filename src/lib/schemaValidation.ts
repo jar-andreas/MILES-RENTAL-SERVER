@@ -340,25 +340,20 @@ export const validateAdminNewBookingSchema = z
     path: ["returnDate"],
   });
 
-  export const validateDriverSchema = z.object({
-  fullName: z
-    .string()
-    .trim()
-    .min(3, {
-      message: "Full name must be at least 3 characters long",
-    }),
+export const validateDriverSchema = z.object({
+  fullName: z.string().trim().min(3, {
+    message: "Full name must be at least 3 characters long",
+  }),
+
   phoneNumber: z
     .string()
     .trim()
     .min(1, {
       message: "Phone number is required",
     })
-    .refine(
-      (num) => /^\+\d{10,15}$/.test(num),
-      {
-        message: "Invalid phone number",
-      },
-    ),
+    .refine((num) => /^\+\d{10,15}$/.test(num), {
+      message: "Invalid phone number",
+    }),
 
   email: z
     .string({
@@ -370,12 +365,9 @@ export const validateAdminNewBookingSchema = z
       message: "Please enter a valid email address",
     }),
 
-  baseCity: z
-    .string()
-    .trim()
-    .min(2, {
-      message: "Base city is required",
-    }),
+  baseCity: z.string().trim().min(2, {
+    message: "Base city is required",
+  }),
 
   yearsOfExperience: z
     .number({
@@ -388,18 +380,13 @@ export const validateAdminNewBookingSchema = z
       message: "Invalid years of experience",
     }),
 
-  languages: z.enum(
-    ["en", "yoruba", "igbo", "hausa", "fr", "pidgin"],
-    {
-      message: "select a language",
-    },
-  ),
-  licenseNumber: z
-    .string()
-    .trim()
-    .min(3, {
-      message: "License number is required",
-    }),
+  languages: z
+    .array(z.enum(["en", "yoruba", "igbo", "hausa", "fr", "pidgin"]))
+    .min(1, { message: "select a language" }),
+
+  licenseNumber: z.string().trim().min(3, {
+    message: "License number is required",
+  }),
 
   expiryDate: z
     .string({
@@ -412,16 +399,17 @@ export const validateAdminNewBookingSchema = z
       message: "License expiry date cannot be in the past",
     }),
 
-  isVerified: z
-    .boolean()
-    .default(false),
+  isVerified: z.boolean().default(false),
 
   status: z
-    .enum(
-      ["available", "on-trip", "off-duty", "inactive"],
-      {
-        message: "select a driver status",
-      },
-    )
+    .enum(["available", "on-trip", "off-duty", "inactive"], {
+      message: "select a driver status",
+    })
     .default("available"),
+  trips: z
+    .number({
+      message: "Trips must be a valid number",
+    })
+    .min(0, { message: "Trips cannot be negative" })
+    .default(0),
 });
