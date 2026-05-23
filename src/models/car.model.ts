@@ -93,7 +93,7 @@ const CarSchema = new Schema<UserCar>(
       enum: ["Petrol", "Diesel", "Hybrid", "Electric"],
     },
     rating: { type: Number, min: 0, max: 5, default: 0 },
-    tripsCount: { type: Number, default: 0 },
+    tripsCount: { type: Number, required: true, default: 0 },
     transmission: {
       type: String,
       required: true,
