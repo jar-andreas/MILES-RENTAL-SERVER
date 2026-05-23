@@ -18,12 +18,7 @@ router.post(
   validateFormData(validateDriverSchema),
   createDriver,
 );
-router.post(
-  "/assign/:bookingId/:driverId",
-  isAuthenticated,
-  isAdmin,
-  assignDriver,
-);
+router.post("/assign-driver", isAuthenticated, isAdmin, assignDriver);
 router.get("/get-all-drivers", isAuthenticated, isAdmin, getAllDriver);
 router.get("/:driverId", isAuthenticated, isAdmin, getSingleDriver);
 
