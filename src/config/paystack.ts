@@ -1,7 +1,6 @@
 import axios from "axios"
 import { env } from "./keys.js"
 import logger from "./logger.js"
-
 export const PAYSTACK_SECRET_KEY = env.PAYSTACK_SECRET_KEY;
 export const PAYSTACK_BASE_URL = 'https://api.paystack.co'; 
 
