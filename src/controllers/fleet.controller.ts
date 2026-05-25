@@ -11,7 +11,7 @@ export const getAllCarsAdmin = tryCatchWrapper(
 
     const skip = (page - 1) * limit;
 
-    // 1. Get cars with pagination
+    
     const cars = await Car.find({})
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -20,28 +20,11 @@ export const getAllCarsAdmin = tryCatchWrapper(
 
     const totalCars = await Car.countDocuments({});
 
-    const formattedCars = [];
-
-    for (const car of cars) {
-      // Get latest booking for each car
-      const latestBooking = await Booking.findOne({ car: car._id })
-        .sort({ pickupDate: -1 })
-        .lean();
-
-      formattedCars.push({
-        id: car._id,
-        brand: car.brand,
-        pricePerDay: car.pricePerDay,
-        status: car.status,
-        pickupLocation: latestBooking?.pickupLocation || null,
-      });
-    }
-
     return sendTsRestSuccess(res, 200, {
       success: true,
       message: "Cars retrieved successfully",
+      cars,
       body: {
-        cars: formattedCars,
         pagination: {
           total: totalCars,
           currentPage: page,
