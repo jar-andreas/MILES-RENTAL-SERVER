@@ -9,6 +9,7 @@ import {
 import { isAdmin } from "../middleware/auth.middleware.js";
 import { validateFormData } from "../middleware/formValidate.js";
 import { validateCreateCarSchema } from "../lib/schemaValidation.js";
+import { clearCache } from "src/middleware/cache.middleware.js";
 
 const router = Router();
 

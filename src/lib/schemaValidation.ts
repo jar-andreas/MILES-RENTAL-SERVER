@@ -413,3 +413,39 @@ export const validateDriverSchema = z.object({
     .min(0, { message: "Trips cannot be negative" })
     .default(0),
 });
+
+export const createCarAdminSchema = z.object({
+  images: z
+    .array(z.string().min(1, "Image is required"))
+    .min(1, "At least one image is required"),
+
+  brand: z.string().min(1, "Brand is required"),
+
+  modelName: z.string().min(1, "Model name is required"),
+
+  year: z
+    .number()
+    .int("Year must be an integer")
+    .min(1900, "Year is too old")
+    .max(new Date().getFullYear() + 1, "Year is invalid"),
+
+  category: z.string().min(1, "Category is required"),
+
+  seats: z
+    .number()
+    .int()
+    .min(1, "Seats must be at least 1"),
+
+  fuelType: z.string().min(1, "Fuel type is required"),
+
+  transmission: z.string().min(1, "Transmission is required"),
+
+  carSpecs: z.object({
+    engine: z.string().optional(),
+    topSpeed: z.string().optional(),
+    mileage: z.string().optional(),
+    boot: z.string().optional(),
+  }),
+
+  status: z.string().min(1, "Status is required"),
+});
