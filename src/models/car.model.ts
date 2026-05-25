@@ -1,6 +1,8 @@
 import mongoose, { Schema, Document } from "mongoose";
 
+
 export interface UserCar extends Document {
+  booking: mongoose.Types.ObjectId;
   brand: string;
   description: string;
   category: "LUXURY" | "SEDAN" | "SUV" | "TRUCK";
@@ -39,6 +41,12 @@ export interface UserCar extends Document {
 
 const CarSchema = new Schema<UserCar>(
   {
+    booking: {
+      type: Schema.Types.ObjectId,
+      ref: "Booking", 
+      required: true
+    },
+
     brand: {
       type: String,
       required: true,
