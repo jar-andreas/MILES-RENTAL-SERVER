@@ -9,6 +9,8 @@ import {
 } from "../controllers/admin.controller.js";
 import { validateFormData } from "../middleware/formValidate.js";
 import { validateAdminNewBookingSchema } from "../lib/schemaValidation.js";
+import { customRateLimiter } from "../middleware/rateLimit.middelware.js";
+import { getAllUsers } from "../controllers/customer.controller.js";
 
 const router = Router();
 
@@ -33,10 +35,12 @@ router.get(
 );
 router.post(
   "/admin_create_booking",
+  customRateLimiter(5, 10),
   isAuthenticated,
   isAdmin,
   validateFormData(validateAdminNewBookingSchema),
   adminBookRide,
 );
+router.get("/customers-dashboard", isAuthenticated, isAdmin, getAllUsers);
 
 export default router;

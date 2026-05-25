@@ -8,11 +8,13 @@ import {
 import { validateFormData } from "../middleware/formValidate.js";
 import { validateBookingSchema } from "../lib/schemaValidation.js";
 import { isAuthenticated } from "../middleware/auth.middleware.js";
+import { customRateLimiter } from "../middleware/rateLimit.middelware.js";
 
 const router = Router();
 
 router.post(
   "/create",
+  customRateLimiter(5, 10),
   isAuthenticated,
   validateFormData(validateBookingSchema),
   createBooking,
