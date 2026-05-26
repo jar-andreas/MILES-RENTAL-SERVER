@@ -12,7 +12,8 @@ import { validateAdminNewBookingSchema } from "../lib/schemaValidation.js";
 import { customRateLimiter } from "../middleware/rateLimit.middelware.js";
 import { getAllUsers } from "../controllers/customer.controller.js";
 import { cacheMiddleware, clearCache } from "../middleware/cache.middleware.js";
-import { getAllCarsAdmin } from "../controllers/fleet.controller.js";
+import { createCar, getAllCarsAdmin } from "../controllers/fleet.controller.js";
+import { uploadMemory } from "../middleware/upload.middleware.js";
 
 const router = Router();
 
@@ -78,6 +79,16 @@ router.post(
   adminBookRide,
   clearCache("admin_bookings"),
   clearCache("customers_dashboard"),
+);
+
+router.post(
+  "/create-car",
+  isAuthenticated,
+  isAdmin,
+  uploadMemory.array("images", 4), // 📸 3. Parse 'images' file array from Postman/Gallery
+  createCar,
+  clearCache("admin_fleet_dashboard"), // 🧼 5. Wipe cache tags so updates reflect instantly
+  clearCache("all_cars"),
 );
 
 export default router;

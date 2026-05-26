@@ -1,7 +1,13 @@
 import tryCatchWrapper from "../lib/tryCatchWrapper.js";
-import { Request, Response } from "express";
-import { sendTsRestSuccess } from "../lib/responseHandler.js";
+import { NextFunction, Request, Response } from "express";
+import { sendTsRestError, sendTsRestSuccess } from "../lib/responseHandler.js";
 import Car from "../models/car.model.js";
+import { uploadToCloudinary } from "../lib/cloudinary.js";
+
+interface ICarImage {
+  url: string;
+  public_id: string;
+}
 
 export const getAllCarsAdmin = tryCatchWrapper(
   async (req: Request, res: Response) => {
@@ -59,6 +65,106 @@ export const getAllCarsAdmin = tryCatchWrapper(
           hasPrevPage: page > 1,
         },
       },
+    });
+  },
+);
+
+export const createCar = tryCatchWrapper(
+  async (req: Request, res: Response, next: NextFunction) => {
+    // 🚀 1. Destructure exactly what is defined in your request body specification
+    const {
+      brand,
+      description,
+      category,
+      modelName,
+      year,
+      tags,
+      pricePerDay,
+      seats,
+      fuelType,
+      rating,
+      tripsCount,
+      transmission,
+      features,
+      carSpecs,
+    } = req.body;
+
+    // 🚀 2. Intercept raw files from req.files and convert them to Base64 strings
+    let uploadedImages: ICarImage[] = [];
+    const files = req.files as Express.Multer.File[];
+
+    if (files && files.length > 0) {
+      const uploadPromises = files.map((file) => {
+        // Convert binary buffer to base64
+        const base64String = file.buffer.toString("base64");
+
+        // Format it as a valid Data URI syntax for Cloudinary
+        const fileDataUri = `data:${file.mimetype};base64,${base64String}`;
+
+        return uploadToCloudinary(fileDataUri);
+      });
+
+      const cloudinaryResults = await Promise.all(uploadPromises);
+      uploadedImages = cloudinaryResults.map((result) => ({
+        url: result.url,
+        public_id: result.public_id,
+      }));
+    }
+
+    // 🚀 3. Safe-parse incoming arrays or objects if they were sent as Form-Data string payloads
+    const parsedTags = typeof tags === "string" ? JSON.parse(tags) : tags;
+    const parsedFeatures =
+      typeof features === "string" ? JSON.parse(features) : features;
+    const parsedCarSpecs =
+      typeof carSpecs === "string" ? JSON.parse(carSpecs) : carSpecs;
+
+    // 🚀 4. Generate the unique slug
+    const finalSlug = `${brand}-${modelName}-${year}`
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, "-")
+      .replace(/[^\w\-]+/g, "");
+
+    const existingCar = await Car.findOne({ slug: finalSlug });
+    if (existingCar) {
+      return sendTsRestError(
+        res,
+        400,
+        "A car with this custom slug already exists",
+      );
+    }
+
+    // 🚀 5. Create the database record exactly with your properties
+    const car = await Car.create({
+      brand,
+      description,
+      category,
+      modelName,
+      year: Number(year) || new Date().getFullYear(),
+      tags: Array.isArray(parsedTags) ? parsedTags : [],
+      pricePerDay: Number(pricePerDay) || 0,
+      seats: Number(seats) || 5,
+      fuelType,
+      transmission,
+      features: Array.isArray(parsedFeatures) ? parsedFeatures : [],
+      rating: Number(rating) || 5.0,
+      tripsCount: Number(tripsCount) || 0,
+      carSpecs: parsedCarSpecs || {},
+      images: uploadedImages, // Saved array of { url, public_id } objects
+      slug: finalSlug,
+    });
+
+    if (!car) {
+      return sendTsRestError(
+        res,
+        500,
+        "Failed to create car record in database",
+      );
+    }
+
+    return sendTsRestSuccess(res, 201, {
+      message: "Car created successfully",
+      data: car,
     });
   },
 );
