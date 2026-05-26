@@ -1,6 +1,5 @@
 import mongoose, { Schema, Document } from "mongoose";
 
-
 export interface UserCar extends Document {
   booking: mongoose.Types.ObjectId;
   brand: string;
@@ -22,7 +21,7 @@ export interface UserCar extends Document {
   seats: number;
   fuelType: "Petrol" | "Diesel" | "Hybrid" | "Electric" | string;
   features: string[];
-  status: "available" | "booked" | "maintenance";
+  status: "available" | "booked" | "maintenance" | "reserved";
   transmission: "Auto" | "Manual" | "Hybrid" | string;
   images: {
     url: string;
@@ -43,8 +42,8 @@ const CarSchema = new Schema<UserCar>(
   {
     booking: {
       type: Schema.Types.ObjectId,
-      ref: "Booking", 
-      required: true
+      ref: "Booking",
+      required: true,
     },
 
     brand: {
@@ -147,7 +146,7 @@ const CarSchema = new Schema<UserCar>(
     status: {
       type: String,
       required: true,
-      enum: ["available", "booked", "maintenance"],
+      enum: ["available", "booked", "maintenance", "reserved"],
       default: "available", // New cars are available by default
     },
   },

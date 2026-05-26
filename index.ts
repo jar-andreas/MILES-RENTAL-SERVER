@@ -19,6 +19,7 @@ import paymentRoutes from "./src/routes/payment.routes.js";
 import adminRoutes from "./src/routes/admin.routes.js";
 import driverRoutes from "./src/routes/driver.route.js";
 import { globalLimiter } from "./src/middleware/rateLimit.middelware.js";
+import { startCleanupPendingBookingsJob } from "./src/jobs/booking.cleanup.jobs.js";
 
 declare global {
   namespace Express {
@@ -162,6 +163,8 @@ const startServer = async (): Promise<void> => {
     // Start email retry cron job
     // startEmailRetryJob();
 
+    // 🚀 2. Start the cron engine immediately after database verification succeeds!
+    startCleanupPendingBookingsJob();
     server = app.listen(PORT, "0.0.0.0", () => {
       logger.info(
         `\n✅ Server running in ${env.NODE_ENV} mode on port ${PORT}`,
