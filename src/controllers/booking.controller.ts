@@ -177,7 +177,11 @@ export const cancelBooking = tryCatchWrapper(
     }
     booking.bookingStatus = "Cancelled";
     if (booking.bookingStatus === "Cancelled" && booking.car) {
-      await Car.findByIdAndUpdate(booking.car, { status: "available" });
+      await Car.findByIdAndUpdate(
+        booking.car,
+        { status: "available" },
+        { runValidators: true },
+      );
       logger.info(
         `Vehicle bound to booking ${id} has been successfully updated to 'available'.`,
       );
