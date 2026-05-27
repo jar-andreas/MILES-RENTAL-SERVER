@@ -49,8 +49,8 @@ export const createBooking = tryCatchWrapper(
       return sendTsRestError(res, 400, "Return date must be after pickup date");
     }
 
-    const DRIVERFEE = 25;
-    const SERVICEFEE = 10;
+    const DRIVERFEE = 25000;
+    const SERVICEFEE = 10000;
 
     // Pull the price per day directly from the database result
     let totalPrice = totalDays * (carDetails.pricePerDay + SERVICEFEE);

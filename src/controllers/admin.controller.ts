@@ -180,8 +180,8 @@ export const adminBookRide = tryCatchWrapper(
     }
 
     // 6. Financial breakdown (Calculated in real NGN Currency Values)
-    const serviceFee = 10;
-    const driverFeePerDay = driverOption === true ? 25 : 0;
+    const serviceFee = 10000;
+    const driverFeePerDay = driverOption === true ? 25000 : 0;
 
     const rentalTotal = totalDays * carDetails.pricePerDay;
     const driverTotal = totalDays * driverFeePerDay;
