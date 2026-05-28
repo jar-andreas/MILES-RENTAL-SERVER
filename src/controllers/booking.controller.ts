@@ -1,3 +1,4 @@
+import ActivityLog from "../models/activity.log.model.js";
 import { Request, Response } from "express";
 import Booking from "../models/booking.model.js";
 import Car from "../models/car.model.js";
@@ -87,9 +88,16 @@ export const createBooking = tryCatchWrapper(
       returnTime,
       totalDays,
       driverOption,
-      driverFee: calculatedDriverFee, // 🌟 Save to DB collection explicitly
-      serviceFee: flatServiceFee,     // 🌟 Save to DB collection explicitly
+      driverFee: calculatedDriverFee,
+      serviceFee: flatServiceFee,
       totalPrice,
+    });
+
+    // 🌟 LIVE LOG INJECTION (Uses verified local userId from session storage)
+    await ActivityLog.create({
+      label: `New reservation placed for a ${carDetails.brand} ${carDetails.modelName} - Ref: #${booking._id.toString().slice(-6).toUpperCase()}`,
+      variant: "info",
+      user: userId,
     });
 
     return sendTsRestSuccess(res, 201, {
@@ -155,7 +163,7 @@ export const cancelBooking = tryCatchWrapper(
     if (!booking) {
       return sendTsRestError(res, 404, "Booking not found");
     }
-    //option to not be able to cancel a trip that has already confrimed or completed
+    //option to not be able to cancel a trip that has already confirmed or completed
     if (
       booking.bookingStatus !== "Pending" &&
       booking.bookingStatus !== "Confirmed"
@@ -177,6 +185,7 @@ export const cancelBooking = tryCatchWrapper(
     if (differenceInTime > twentyFourHours) {
       return sendTsRestError(res, 400, "Cancellation window has expired");
     }
+
     booking.bookingStatus = "Cancelled";
     if (booking.bookingStatus === "Cancelled" && booking.car) {
       await Car.findByIdAndUpdate(
@@ -189,6 +198,14 @@ export const cancelBooking = tryCatchWrapper(
       );
     }
     await booking.save();
+
+    // 🌟 LIVE LOG INJECTION (Uses verified local userId from session storage)
+    await ActivityLog.create({
+      label: `Customer cancelled pending reservation request #${id.slice(-6)}`,
+      variant: "warning",
+      user: userId,
+    });
+
     return sendTsRestSuccess(res, 200, {
       message: "Booking cancelled successfully",
       booking,

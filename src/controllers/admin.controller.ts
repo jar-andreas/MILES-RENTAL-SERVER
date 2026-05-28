@@ -7,6 +7,7 @@ import { NextFunction, Request, Response } from "express";
 import logger from "../config/logger.js";
 import { sendBookingCreatedEmail } from "../email/send-email.js";
 import Payment from "../models/payment.model.js";
+import ActivityLog from "../models/activity.log.model.js";
 
 export const getAdminBookings = tryCatchWrapper(
   async (req: Request, res: Response) => {
@@ -199,10 +200,17 @@ export const adminBookRide = tryCatchWrapper(
       returnTime: finalReturnTime,
       totalDays,
       driverOption: !!driverOption,
-      driverFee: driverTotal,   // 🌟 FIX: Explicitly pass driver fee total
-      serviceFee: serviceFee,   // 🌟 FIX: Explicitly pass flat service fee
+      driverFee: driverTotal,
+      serviceFee: serviceFee,
       totalPrice: grandTotal,
       bookingStatus: "Pending",
+    });
+
+    // 🌟 LIVE LOG INJECTION
+    await ActivityLog.create({
+      label: `Admin booked a new ride for Customer (${carDetails.brand} ${carDetails.modelName}) - Ref: #${booking._id.toString().slice(-6).toUpperCase()}`,
+      variant: "info",
+      user: (req as any).user?._id,
     });
 
     // 8. Update car status to booked
@@ -233,7 +241,7 @@ export const adminBookRide = tryCatchWrapper(
 
     sendBookingCreatedEmail(user.email, {
       userName,
-      car, 
+      car,
       pickupLocation,
       returnLocation,
       totalDays,
@@ -298,6 +306,14 @@ export const adminCancelBooking = tryCatchWrapper(
         `Vehicle bound to booking ${bookingId} has been successfully updated to 'available'.`,
       );
     }
+
+    // 🌟 LIVE LOG INJECTION
+    await ActivityLog.create({
+      label: `Booking reservation reference #${bookingId.slice(-6)} was cancelled by admin`,
+      variant: "danger",
+      user: (req as any).user?._id,
+    });
+
     logger.info(
       `Admin context modified booking ${bookingId} status to: Cancelled`,
     );
@@ -330,7 +346,6 @@ export const adminMarkBookingCompleted = tryCatchWrapper(
     }
 
     // Time Enforcement Guard Gate
-
     // 1. Get a clean "YYYY-MM-DD" local date string from Mongoose directly
     const formattedReturnDate = booking.returnDate.toLocaleDateString("en-CA");
 
@@ -358,6 +373,13 @@ export const adminMarkBookingCompleted = tryCatchWrapper(
         $inc: { tripsCount: 1 },
       });
     }
+
+    // 🌟 LIVE LOG INJECTION
+    await ActivityLog.create({
+      label: `Lease Agreement #${bookingId.slice(-6)} closed out and marked COMPLETED`,
+      variant: "success",
+      user: (req as any).user?._id,
+    });
 
     logger.info(`Admin context successfully completed booking ${bookingId}`);
 
@@ -393,6 +415,263 @@ export const getAdminSingleBooking = tryCatchWrapper(
     return sendTsRestSuccess(res as any, 200, {
       success: true,
       booking,
+    });
+  },
+);
+
+export const getDashboardStats = tryCatchWrapper(
+  async (req: Request, res: Response) => {
+    // -------------------------------------------------------------------------
+    // STEP 1: CALCULATION OF TIME BOUNDARIES (Today, 7d, 30d, custom)
+    // -------------------------------------------------------------------------
+    const range = req.query.range as string | undefined;
+    const startDate = req.query.startDate as string | undefined;
+    const endDate = req.query.endDate as string | undefined;
+
+    let startFilterDate = new Date();
+    startFilterDate.setHours(0, 0, 0, 0); // Reset time to midnight for clean daily math
+    const endFilterDate = new Date();
+
+    if (range === "7d") {
+      startFilterDate.setDate(startFilterDate.getDate() - 7);
+    } else if (range === "30d" || !range) {
+      startFilterDate.setDate(startFilterDate.getDate() - 30); // Default to last 30 days if there is no query
+    } else if (range === "today") {
+      // Stays at today's midnight boundary
+    } else if (range === "custom" && startDate && endDate) {
+      // Convert incoming custom date strings into valid Date objects
+      startFilterDate = new Date(startDate);
+      endFilterDate.setTime(new Date(endDate).getTime());
+    }
+
+    // -------------------------------------------------------------------------
+    // SECTION 1: DATA FOR TOP SUMMARY CARDS
+    // -------------------------------------------------------------------------
+    // Card A: Total Bookings
+    const totalBookingCount = await Booking.countDocuments({
+      createdAt: { $gte: startFilterDate, $lte: endFilterDate },
+    });
+
+    // Card B: New Customers
+    const newUsersCount = await User.countDocuments({
+      createdAt: { $gte: startFilterDate, $lte: endFilterDate },
+      role: "user",
+    });
+
+    // Card C: Total Revenue
+    const successfulPayments = await Payment.find({
+      status: "success",
+      createdAt: { $gte: startFilterDate, $lte: endFilterDate },
+    }).lean();
+
+    const revenueAmount = successfulPayments.reduce(
+      (sum, pay) => sum + pay.amount,
+      0,
+    );
+
+    // -------------------------------------------------------------------------
+    // SECTION 2: REVENUE SUMMARY CARDS & LINE CHART TIMELINE
+    // -------------------------------------------------------------------------
+    const timelineData = successfulPayments.map((payment) => {
+      const cleanDate = new Date(payment.createdAt).toISOString().split("T")[0];
+
+      return {
+        date: cleanDate,
+        amount: payment.amount,
+        method: payment.paymentMethod,
+      };
+    });
+
+    // -------------------------------------------------------------------------
+    // SECTION 3: FLEET INVENTORY STATUS (PIE CHART & UTILIZATION RATE)
+    // -------------------------------------------------------------------------
+    const allCars = await Car.find({}).lean();
+
+    const fleetDistribution = {
+      available: 0,
+      booked: 0,
+      maintenance: 0,
+      reserved: 0,
+    };
+
+    allCars.forEach((car) => {
+      const status = car.status?.toLowerCase();
+
+      if (status === "available") {
+        fleetDistribution.available++;
+      } else if (status === "booked") {
+        fleetDistribution.booked++;
+      } else if (status === "maintenance") {
+        fleetDistribution.maintenance++;
+      } else if (status === "reserved") {
+        fleetDistribution.reserved++;
+      }
+    });
+
+    const totalVehicleCounts = allCars.length;
+    const fleetUtilizationRate =
+      totalVehicleCounts > 0
+        ? Math.round(
+            ((fleetDistribution.booked + fleetDistribution.reserved) /
+              totalVehicleCounts) *
+              100,
+          )
+        : 0;
+
+    // -------------------------------------------------------------------------
+    // SECTION 4: LIVE OPERATIONS STREAM (RECENT OVERVIEW LIST)
+    // -------------------------------------------------------------------------
+    const liveRevenueOverviewList = await Booking.find({
+      bookingStatus: { $in: ["Pending", "Confirmed", "Ongoing"] },
+    })
+      .populate("user", "firstName lastName")
+      .populate("car", "brand modelName")
+      .sort({ pickupDate: 1 })
+      .limit(5)
+      .lean();
+
+    // -------------------------------------------------------------------------
+    // SECTION 5: TOP PERFORMING VEHICLES (RANKED LIST)
+    // -------------------------------------------------------------------------
+    const performanceBookings = await Booking.find({
+      bookingStatus: { $ne: "Cancelled" },
+    })
+      .populate("car", "brand modelName images")
+      .lean();
+
+    const vehicleMap: Record<
+      string,
+      {
+        brand: string;
+        modelName: string;
+        image: string;
+        totalEarned: number;
+        tripsCount: number;
+      }
+    > = {};
+
+    performanceBookings.forEach((booking) => {
+      if (!booking.car) return;
+
+      const carId = (booking.car as any)._id.toString();
+
+      if (!vehicleMap[carId]) {
+        vehicleMap[carId] = {
+          brand: (booking.car as any).brand,
+          modelName: (booking.car as any).modelName,
+          image: (booking.car as any).images?.[0] || "",
+          totalEarned: 0,
+          tripsCount: 0,
+        };
+      }
+
+      vehicleMap[carId].totalEarned += booking.totalPrice || 0;
+      vehicleMap[carId].tripsCount += 1;
+    });
+
+    const topPerformingVehicles = Object.values(vehicleMap)
+      .sort((carA, carB) => carB.totalEarned - carA.totalEarned)
+      .slice(0, 4);
+
+    // -------------------------------------------------------------------------
+    // SECTION 6: LIVE RECENT ACTIVITIES FEED
+    // -------------------------------------------------------------------------
+    const liveActivityFeed = await ActivityLog.find({})
+      .populate("user", "firstName lastName")
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .lean();
+
+    // -------------------------------------------------------------------------
+    // SECTION 7: LIVE "ACTION REQUIRED" OPERATIONAL ALERTS
+    // -------------------------------------------------------------------------
+    const overdueCount = await Booking.countDocuments({
+      bookingStatus: "Confirmed",
+      returnDate: { $lt: new Date() },
+    });
+
+    const availableCount = await Car.countDocuments({
+      status: "available",
+    });
+
+    const pendingApprovalCount = await Booking.countDocuments({
+      bookingStatus: "Pending",
+    });
+
+    let activeAlertsCounter = 0;
+    if (overdueCount > 0) activeAlertsCounter++;
+    if (availableCount > 0) activeAlertsCounter++;
+    if (pendingApprovalCount > 0) activeAlertsCounter++;
+
+    const dynamicAlertsList = [];
+    if (overdueCount > 0) {
+      dynamicAlertsList.push({
+        id: "late_returns",
+        title: `${overdueCount} vehicles overdue for return`,
+        details:
+          "Action required: Contact customers regarding lease extensions or late penalty fees.",
+      });
+    }
+    if (pendingApprovalCount > 0) {
+      dynamicAlertsList.push({
+        id: "pending_approvals",
+        title: `${pendingApprovalCount} bookings awaiting confirmation`,
+        details:
+          "Action required: Verify user documents and approve or deny pending client schedules.",
+      });
+    }
+    if (availableCount > 0) {
+      dynamicAlertsList.push({
+        id: "high_availability", // ✅ Patched to avoid tracking conflicts
+        title: `${availableCount} vehicles are currently unrented`,
+        details:
+          "Action required: Review active marketing promos or reach out to past customers to boost utilization.",
+      });
+    }
+
+    // -------------------------------------------------------------------------
+    // SECTION 8: THE RESPONSE DELIVERY TRUCK
+    // -------------------------------------------------------------------------
+    return sendTsRestSuccess(res, 200, {
+      success: true,
+      message: "Dashboard analytics calculated successfully",
+      body: {
+        summaryCards: {
+          activeBookings: {
+            value: totalBookingCount,
+          },
+          revenue: {
+            value: revenueAmount,
+            formattedValue: `₦${(revenueAmount / 1000000).toFixed(1)}M`,
+            percentageChange: "+6.2%",
+          },
+          newCustomers: { value: newUsersCount, percentageChange: "+13%" },
+          fleetUtilization: {
+            value: `${fleetUtilizationRate}%`,
+            percentageChange: "-1.1%",
+          },
+        },
+        revenueChart: {
+          timelineData,
+          displayContext: range || "30d",
+        },
+        fleetStatus: {
+          total: totalVehicleCounts,
+          breakdown: [
+            { label: "Available", count: fleetDistribution.available },
+            { label: "Booked", count: fleetDistribution.booked },
+            { label: "Maintenance", count: fleetDistribution.maintenance },
+            { label: "Reserved", count: fleetDistribution.reserved },
+          ],
+        },
+        liveOverviewList: liveRevenueOverviewList,
+        topVehicles: topPerformingVehicles,
+        activityFeed: liveActivityFeed,
+        actionRequired: {
+          alertCount: activeAlertsCounter,
+          alerts: dynamicAlertsList,
+        },
+      },
     });
   },
 );

@@ -6,6 +6,7 @@ import {
   adminMarkBookingCompleted,
   getAdminBookings,
   getAdminSingleBooking,
+  getDashboardStats,
 } from "../controllers/admin.controller.js";
 import { validateFormData } from "../middleware/formValidate.js";
 import { validateAdminNewBookingSchema } from "../lib/schemaValidation.js";
@@ -48,6 +49,16 @@ router.get(
   isAdmin,
   cacheMiddleware("admin_fleet_dashboard", 1800), // Optional: Cache for 30 minutes to stay high-performance
   getAllCarsAdmin,
+);
+
+// 📊 ADMINISTRATIVE ANALYTICS ROUTE
+// Fetches time-bound financial computations, operational alerts, recent timelines, and KPIs.
+router.get(
+  "/dashboard-stats",
+  isAuthenticated,
+  isAdmin,
+  cacheMiddleware("admin_dashboard_stats", 300), // 🧠 Optional: Cache for 5 minutes (300s) to reduce continuous DB strain
+  getDashboardStats,
 );
 
 router.post(
