@@ -142,7 +142,11 @@ export class PaystackService {
           bookingStatus: "Confirmed",
         });
 
-        await Car.findByIdAndUpdate(metadata.carId, { status: "booked" });
+        await Car.findByIdAndUpdate(
+          metadata.carId,
+          { status: "booked" },
+          { new: true, runValidators: true },
+        );
 
         // 3. Trigger the email side-effect
         if (payment) {

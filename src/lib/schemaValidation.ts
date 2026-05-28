@@ -204,7 +204,7 @@ export const validateCreateCarSchema = z.object({
 
   fuelType: z.string().trim().min(1, { message: "Fuel type is required" }),
 
-  transmission: z.enum(["Auto", "Manual", "Hybrid"], {
+  transmission: z.enum(["AUTO", "MANUAL", "HYBRID"], {
     message: "Invalid transmission type",
   }),
 

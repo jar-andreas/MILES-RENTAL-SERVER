@@ -101,12 +101,12 @@ const BookingSchema = new Schema<UserBooking>(
 
     driverFee: {
       type: Number,
-      default: 25,
+      default: 0,
     },
 
     serviceFee: {
       type: Number,
-      default: 10,
+      default: 0,
     },
 
     bookingStatus: {

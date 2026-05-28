@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface UserCar extends Document {
+  booking: mongoose.Types.ObjectId;
   brand: string;
   description: string;
   category: "LUXURY" | "SEDAN" | "SUV" | "TRUCK";
@@ -20,8 +21,8 @@ export interface UserCar extends Document {
   seats: number;
   fuelType: "Petrol" | "Diesel" | "Hybrid" | "Electric" | string;
   features: string[];
-  status: "available" | "booked" | "maintenance";
-  transmission: "Auto" | "Manual" | "Hybrid" | string;
+  status: "available" | "booked" | "maintenance" | "reserved";
+  transmission: "AUTO" | "MANUAL" | "HYBRID" | string;
   images: {
     url: string;
     public_id: string;
@@ -39,6 +40,12 @@ export interface UserCar extends Document {
 
 const CarSchema = new Schema<UserCar>(
   {
+    booking: {
+      type: Schema.Types.ObjectId,
+      ref: "Booking",
+      required: false,
+    },
+
     brand: {
       type: String,
       required: true,
@@ -97,8 +104,7 @@ const CarSchema = new Schema<UserCar>(
     transmission: {
       type: String,
       required: true,
-      enum: ["Auto", "Manual", "Hybrid"],
-      uppercase: true,
+      enum: ["AUTO", "MANUAL", "HYBRID"],
     },
     features: {
       type: [String],
@@ -139,7 +145,7 @@ const CarSchema = new Schema<UserCar>(
     status: {
       type: String,
       required: true,
-      enum: ["available", "booked", "maintenance"],
+      enum: ["available", "booked", "maintenance", "reserved"],
       default: "available", // New cars are available by default
     },
   },

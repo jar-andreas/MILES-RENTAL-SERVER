@@ -19,11 +19,8 @@ export const createBooking = tryCatchWrapper(
     } = req.body;
 
     const userId = req.session.userId;
-    // 1. Fetch the Car Details first
-    const carDetails = await Car.findById(car);
-    if (!carDetails) {
-      return sendTsRestError(res, 404, "Vehicle not found");
-    }
+
+    // 1. Core structural field validation
     if (
       !car ||
       !pickupLocation ||
@@ -38,6 +35,12 @@ export const createBooking = tryCatchWrapper(
       );
     }
 
+    // 2. Fetch the Car Details first
+    const carDetails = await Car.findById(car);
+    if (!carDetails) {
+      return sendTsRestError(res, 404, "Vehicle not found");
+    }
+
     const pickUp = new Date(pickupDate);
     const toReturn = new Date(returnDate);
 
@@ -49,19 +52,15 @@ export const createBooking = tryCatchWrapper(
       return sendTsRestError(res, 400, "Return date must be after pickup date");
     }
 
-    const DRIVERFEE = 25;
-    const SERVICEFEE = 10;
+    // 3. Define clean business-logic fee rules
+    const calculatedDriverFee = driverOption === true ? 25000 * totalDays : 0;
+    const flatServiceFee = 10000; // Flat fee per rental, not multiplied by days
 
-    // Pull the price per day directly from the database result
-    let totalPrice = totalDays * (carDetails.pricePerDay + SERVICEFEE);
+    // 4. Calculate total price dynamically
+    const carRentalTotal = carDetails.pricePerDay * totalDays;
+    const totalPrice = carRentalTotal + flatServiceFee + calculatedDriverFee;
 
-    // Optional: Add driver fee if selected
-    if (driverOption === true) {
-      totalPrice += DRIVERFEE * totalDays; // $25 extra per day for a driver
-    }
-
-    // Availability Check
-    // Look for existing bookings for this car that overlap with the new dates
+    // 5. Availability Check (Overlapping dates)
     const existingBooking = await Booking.findOne({
       car,
       bookingStatus: { $nin: ["Cancelled", "Completed"] },
@@ -76,6 +75,7 @@ export const createBooking = tryCatchWrapper(
       );
     }
 
+    // 6. Create Booking and pass ALL required attributes explicitly
     const booking = await Booking.create({
       user: userId,
       car,
@@ -86,8 +86,10 @@ export const createBooking = tryCatchWrapper(
       pickupTime,
       returnTime,
       totalDays,
-      totalPrice,
       driverOption,
+      driverFee: calculatedDriverFee, // 🌟 Save to DB collection explicitly
+      serviceFee: flatServiceFee,     // 🌟 Save to DB collection explicitly
+      totalPrice,
     });
 
     return sendTsRestSuccess(res, 201, {
@@ -177,7 +179,11 @@ export const cancelBooking = tryCatchWrapper(
     }
     booking.bookingStatus = "Cancelled";
     if (booking.bookingStatus === "Cancelled" && booking.car) {
-      await Car.findByIdAndUpdate(booking.car, { status: "available" });
+      await Car.findByIdAndUpdate(
+        booking.car,
+        { status: "available" },
+        { runValidators: true },
+      );
       logger.info(
         `Vehicle bound to booking ${id} has been successfully updated to 'available'.`,
       );

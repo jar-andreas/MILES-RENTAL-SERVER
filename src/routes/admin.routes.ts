@@ -11,28 +11,65 @@ import { validateFormData } from "../middleware/formValidate.js";
 import { validateAdminNewBookingSchema } from "../lib/schemaValidation.js";
 import { customRateLimiter } from "../middleware/rateLimit.middelware.js";
 import { getAllUsers } from "../controllers/customer.controller.js";
+import { cacheMiddleware, clearCache } from "../middleware/cache.middleware.js";
+import { createCar, getAllCarsAdmin } from "../controllers/fleet.controller.js";
+import { uploadMemory } from "../middleware/upload.middleware.js";
 
 const router = Router();
 
-router.get("/get_bookings", isAuthenticated, isAdmin, getAdminBookings);
+// 1. GET BOOKINGS LIST (Cached for 1 hour, or until cleared by updates)
+router.get(
+  "/get_bookings",
+  isAuthenticated,
+  isAdmin,
+  cacheMiddleware("admin_bookings", 3600),
+  getAdminBookings,
+);
+
+router.get(
+  "/single_booking/:bookingId",
+  isAuthenticated,
+  isAdmin,
+  cacheMiddleware("single_booking", 3600),
+  getAdminSingleBooking,
+);
+
+router.get(
+  "/customers-dashboard",
+  isAuthenticated,
+  isAdmin,
+  cacheMiddleware("customers_dashboard", 3600),
+  getAllUsers,
+);
+
+router.get(
+  "/fleet-dashboard",
+  isAuthenticated,
+  isAdmin,
+  cacheMiddleware("admin_fleet_dashboard", 1800), // Optional: Cache for 30 minutes to stay high-performance
+  getAllCarsAdmin,
+);
+
 router.post(
   "/cancel-booking/:bookingId",
   isAuthenticated,
   isAdmin,
   adminCancelBooking,
+  clearCache("admin_bookings"),
+  clearCache("single_booking"),
+  clearCache("customers_dashboard"),
 );
+
 router.post(
   "/mark_booking_as_completed/:bookingId",
   isAuthenticated,
   isAdmin,
   adminMarkBookingCompleted,
+  clearCache("admin_bookings"),
+  clearCache("single_booking"),
+  clearCache("customers_dashboard"),
 );
-router.get(
-  "/single_booking/:bookingId",
-  isAuthenticated,
-  isAdmin,
-  getAdminSingleBooking,
-);
+
 router.post(
   "/admin_create_booking",
   customRateLimiter(5, 10),
@@ -40,7 +77,18 @@ router.post(
   isAdmin,
   validateFormData(validateAdminNewBookingSchema),
   adminBookRide,
+  clearCache("admin_bookings"),
+  clearCache("customers_dashboard"),
 );
-router.get("/customers-dashboard", isAuthenticated, isAdmin, getAllUsers);
+
+router.post(
+  "/create-car",
+  isAuthenticated,
+  isAdmin,
+  uploadMemory.array("images", 4), // 📸 3. Parse 'images' file array from Postman/Gallery
+  createCar,
+  clearCache("admin_fleet_dashboard"), // 🧼 5. Wipe cache tags so updates reflect instantly
+  clearCache("all_cars"),
+);
 
 export default router;
