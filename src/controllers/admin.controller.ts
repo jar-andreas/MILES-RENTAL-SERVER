@@ -187,7 +187,7 @@ export const adminBookRide = tryCatchWrapper(
     const driverTotal = totalDays * driverFeePerDay;
     const grandTotal = rentalTotal + serviceFee + driverTotal;
 
-    // 7. Create the Booking record (Pending status)
+    // 7. Create the Booking record (Pass itemized fee properties!)
     const booking = await Booking.create({
       user: user._id,
       car: carDetails._id,
@@ -198,8 +198,10 @@ export const adminBookRide = tryCatchWrapper(
       pickupTime: finalPickupTime,
       returnTime: finalReturnTime,
       totalDays,
-      totalPrice: grandTotal,
       driverOption: !!driverOption,
+      driverFee: driverTotal,   // 🌟 FIX: Explicitly pass driver fee total
+      serviceFee: serviceFee,   // 🌟 FIX: Explicitly pass flat service fee
+      totalPrice: grandTotal,
       bookingStatus: "Pending",
     });
 
@@ -226,12 +228,12 @@ export const adminBookRide = tryCatchWrapper(
       reference,
     });
 
-    // 10. Send confirmation email using the unified file handler (Keeps controller super clean!)
+    // 10. Send confirmation email using actual readable vehicle parameters
     const userName = fullname || `${user.firstName} ${user.lastName}`;
 
     sendBookingCreatedEmail(user.email, {
       userName,
-      car,
+      car, 
       pickupLocation,
       returnLocation,
       totalDays,
