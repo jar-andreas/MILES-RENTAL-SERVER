@@ -479,6 +479,13 @@ export const getDashboardStats = tryCatchWrapper(
         date: cleanDate,
         amount: payment.amount,
         method: payment.paymentMethod,
+        // Simple inline checks: returns the amount if it matches, otherwise 0
+        paystackAmount:
+          payment.paymentMethod === "Pay_with_Paystack" ? payment.amount : 0,
+        bankTransferAmount:
+          payment.paymentMethod === "Pay_with_Bank_Transfer"
+            ? payment.amount
+            : 0,
       };
     });
 
