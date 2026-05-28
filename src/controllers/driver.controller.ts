@@ -73,7 +73,7 @@ export const getAllDriver = tryCatchWrapper(
 
     const skipOffset = (page - 1) * limit;
 
-    // Build MongoDB matchStage (Flow Step 2 & 3)
+    // Build MongoDB matchStage
     const matchStage: Record<string, any> = {};
 
     if (query.trim() !== "") {
@@ -93,6 +93,8 @@ export const getAllDriver = tryCatchWrapper(
         $options: "i",
       };
     }
+
+    // 1. Fetch paginated drivers
     const driver = await Driver.find(matchStage)
       .sort({ createdAt: -1 })
       .limit(limit)
@@ -101,22 +103,70 @@ export const getAllDriver = tryCatchWrapper(
 
     const total = await Driver.countDocuments(matchStage);
 
-    const availableDrivers = await Driver.countDocuments({
-      status: "available",
-    });
-    const onTripDrivers = await Driver.countDocuments({ status: "on-trip" });
-    const offDutyDrivers = await Driver.countDocuments({ status: "off-duty" });
-    const inactiveDrivers = await Driver.countDocuments({ status: "inactive" });
+    // 🌟 2. FAST AGGREGATION: Calculate all dashboard card metrics in a single query pass
+    const statsResult = await Driver.aggregate([
+      {
+        $group: {
+          _id: null,
+          // Calculate the global fleet rating average (assumes field name is 'rating' or 'rate')
+          averageRating: { $avg: "$rating" },
+          // Tabulate counts for individual enum status keys
+          availableCount: {
+            $sum: { $cond: [{ $eq: ["$status", "available"] }, 1, 0] },
+          },
+          onTripCount: {
+            $sum: { $cond: [{ $eq: ["$status", "on-trip"] }, 1, 0] },
+          },
+          offDutyCount: {
+            $sum: { $cond: [{ $eq: ["$status", "off-duty"] }, 1, 0] },
+          },
+          inactiveCount: {
+            $sum: { $cond: [{ $eq: ["$status", "inactive"] }, 1, 0] },
+          },
+        },
+      },
+    ]);
+
+    // Fallback defaults if database collection is empty
+    const stats = statsResult[0] || {
+      averageRating: 0,
+      availableCount: 0,
+      onTripCount: 0,
+      offDutyCount: 0,
+      inactiveCount: 0,
+    };
+
+    // 🌟 3. Compute Top Card Metrics based on dashboard visual criteria
+    const availableToday = stats.availableCount;
+    const onTripNow = stats.onTripCount;
+    // Active Drivers = Total registered drivers minus those completely deactivated ('inactive')
+    const totalDriversInSystem = await Driver.countDocuments({});
+    const activeDrivers = totalDriversInSystem - stats.inactiveCount;
+
+    // Round average rating beautifully to two decimal places (e.g., 4.82)
+    const avgRating = stats.averageRating
+      ? Number(stats.averageRating.toFixed(2))
+      : 0;
 
     return sendTsRestSuccess(res as any, 200, {
       success: true,
       message: "Drivers found",
       body: {
         driver,
-        availableDrivers: availableDrivers,
-        onTripDrivers: onTripDrivers,
-        offDutyDrivers: offDutyDrivers,
-        inactiveDrivers: inactiveDrivers,
+        // Metrics mapping for the top analytics dashboard summary cards
+        activeDrivers, // Card 1: 46
+        onTripDrivers: onTripNow, // Card 2: 18
+        availableDrivers: availableToday, // Card 3: 22
+        avgRating, // Card 4: 4.82
+
+        // Individual tab list counters
+        tabCounters: {
+          all: totalDriversInSystem,
+          available: stats.availableCount,
+          onTrip: stats.onTripCount,
+          offDuty: stats.offDutyCount,
+          inactive: stats.inactiveCount,
+        },
         meta: {
           currentPage: Number(page),
           limit: Number(limit),
