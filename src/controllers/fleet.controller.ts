@@ -90,6 +90,11 @@ export const createCar = tryCatchWrapper(
       carSpecs,
     } = req.body;
 
+    // 🛑 Early Validation Check
+    if (!brand || !modelName || !year) {
+      return sendTsRestError(res, 400, "Brand, model name, and year are required.");
+    }
+
     // 🚀 2. Intercept raw files from req.files and convert them to Base64 strings
     let uploadedImages: ICarImage[] = [];
     const files = req.files as Express.Multer.File[];
@@ -120,7 +125,7 @@ export const createCar = tryCatchWrapper(
       typeof carSpecs === "string" ? JSON.parse(carSpecs) : carSpecs;
 
     // 🚀 4. Generate the unique slug
-    const finalSlug = `${brand}-${modelName}-${year}`
+    const finalSlug = slug || `${brand}-${modelName}-${year}`
       .toLowerCase()
       .trim()
       .replace(/\s+/g, "-")
@@ -152,7 +157,7 @@ export const createCar = tryCatchWrapper(
       tripsCount: Number(tripsCount) || 0,
       carSpecs: parsedCarSpecs || {},
       images: uploadedImages, // Saved array of { url, public_id } objects
-      slug: slug || finalSlug,
+      slug: finalSlug,
     });
 
     if (!car) {
