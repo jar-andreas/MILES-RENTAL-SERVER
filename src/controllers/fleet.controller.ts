@@ -82,6 +82,7 @@ export const createCar = tryCatchWrapper(
       pricePerDay,
       seats,
       fuelType,
+      slug,
       rating,
       tripsCount,
       transmission,
@@ -151,7 +152,7 @@ export const createCar = tryCatchWrapper(
       tripsCount: Number(tripsCount) || 0,
       carSpecs: parsedCarSpecs || {},
       images: uploadedImages, // Saved array of { url, public_id } objects
-      slug: finalSlug,
+      slug: slug || finalSlug,
     });
 
     if (!car) {
