@@ -92,7 +92,11 @@ export const createCar = tryCatchWrapper(
 
     // 🛑 Early Validation Check
     if (!brand || !modelName || !year) {
-      return sendTsRestError(res, 400, "Brand, model name, and year are required.");
+      return sendTsRestError(
+        res,
+        400,
+        "Brand, model name, and year are required.",
+      );
     }
 
     // 🚀 2. Intercept raw files from req.files and convert them to Base64 strings
@@ -125,11 +129,13 @@ export const createCar = tryCatchWrapper(
       typeof carSpecs === "string" ? JSON.parse(carSpecs) : carSpecs;
 
     // 🚀 4. Generate the unique slug
-    const finalSlug = slug || `${brand}-${modelName}-${year}`
-      .toLowerCase()
-      .trim()
-      .replace(/\s+/g, "-")
-      .replace(/[^\w\-]+/g, "");
+    const finalSlug =
+      slug ||
+      `${brand}-${modelName}-${year}`
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, "-")
+        .replace(/[^\w\-]+/g, "");
 
     const existingCar = await Car.findOne({ slug: finalSlug });
     if (existingCar) {
