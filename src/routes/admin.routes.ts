@@ -7,9 +7,14 @@ import {
   getAdminBookings,
   getAdminSingleBooking,
   getDashboardStats,
+  getAdminSettings,
+  updateAdminSettings,
 } from "../controllers/admin.controller.js";
 import { validateFormData } from "../middleware/formValidate.js";
-import { validateAdminNewBookingSchema } from "../lib/schemaValidation.js";
+import {
+  validateAdminNewBookingSchema,
+  validateAdminSettingsSchema,
+} from "../lib/schemaValidation.js";
 import { customRateLimiter } from "../middleware/rateLimit.middelware.js";
 import { getAllUsers } from "../controllers/customer.controller.js";
 import { cacheMiddleware, clearCache } from "../middleware/cache.middleware.js";
@@ -100,6 +105,28 @@ router.post(
   createCar,
   clearCache("admin_fleet_dashboard"), // 🧼 5. Wipe cache tags so updates reflect instantly
   clearCache("all_cars"),
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ADMIN SETTINGS ROUTES
+// GET  /admin/settings         — fetch current business profile
+// PUT  /admin/settings         — update / upsert business profile
+// ─────────────────────────────────────────────────────────────────────────────
+router.get(
+  "/settings",
+  isAuthenticated,
+  isAdmin,
+  cacheMiddleware("admin_settings", 3600),
+  getAdminSettings,
+);
+
+router.put(
+  "/settings",
+  isAuthenticated,
+  isAdmin,
+  validateFormData(validateAdminSettingsSchema),
+  updateAdminSettings,
+  clearCache("admin_settings"),
 );
 
 export default router;
