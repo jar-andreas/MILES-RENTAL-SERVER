@@ -64,6 +64,7 @@ export const getAdminBookings = tryCatchWrapper(
 
     const Booking = (await import("../models/booking.model.js")).default;
     const PaymentModel = (await import("../models/payment.model.js")).default;
+    const Driver = (await import("../models/driver.model.js")).default;
 
     const bookings = await Booking.find(matchState)
       .populate("user", "firstName lastName email phone")
@@ -72,6 +73,10 @@ export const getAdminBookings = tryCatchWrapper(
         path: "payment",
         model: PaymentModel,
         select: "paymentMethod reference paidAt amount",
+      })
+      .populate({
+        path: "driver",
+        model: Driver,
       })
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
@@ -397,6 +402,7 @@ export const getAdminSingleBooking = tryCatchWrapper(
 
     // 1. Manually import the model object inline so it definitely executes
     const PaymentModel = (await import("../models/payment.model.js")).default;
+    const Driver = (await import("../models/driver.model.js")).default;
 
     const booking = await Booking.findById(bookingId)
       .populate("car")
@@ -405,6 +411,10 @@ export const getAdminSingleBooking = tryCatchWrapper(
         path: "payment",
         model: PaymentModel,
         select: "paymentMethod reference paidAt amount",
+      })
+      .populate({
+        path: "driver",
+        model: Driver, // 🌟 This guarantees Mongoose knows exactly which model mapping to pull from!
       })
       .lean();
 
