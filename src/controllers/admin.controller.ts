@@ -8,6 +8,7 @@ import logger from "../config/logger.js";
 import { sendBookingCreatedEmail } from "../email/send-email.js";
 import Payment from "../models/payment.model.js";
 import ActivityLog from "../models/activity.log.model.js";
+import AdminSettings from "../models/adminSettings.model.js";
 
 export const getAdminBookings = tryCatchWrapper(
   async (req: Request, res: Response) => {
@@ -529,10 +530,10 @@ export const getDashboardStats = tryCatchWrapper(
     const fleetUtilizationRate =
       totalVehicleCounts > 0
         ? Math.round(
-            ((fleetDistribution.booked + fleetDistribution.reserved) /
-              totalVehicleCounts) *
-              100,
-          )
+          ((fleetDistribution.booked + fleetDistribution.reserved) /
+            totalVehicleCounts) *
+          100,
+        )
         : 0;
 
     // -------------------------------------------------------------------------
@@ -689,6 +690,98 @@ export const getDashboardStats = tryCatchWrapper(
           alerts: dynamicAlertsList,
         },
       },
+    });
+  },
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ADMIN SETTINGS — GET
+// Returns the single business-profile settings document.
+// If none exists yet, seeds it with empty-string defaults so the frontend
+// always receives a well-shaped object on first load.
+// ─────────────────────────────────────────────────────────────────────────────
+export const getAdminSettings = tryCatchWrapper(
+  async (req: Request, res: Response) => {
+    let settings = await AdminSettings.findOne({}).lean();
+
+    if (!settings) {
+      // Seed defaults on very first call so the form always has something to render
+      settings = await AdminSettings.create({
+        legalName: "",
+        tradingName: "",
+        supportEmail: "",
+        supportPhone: "",
+        country: "",
+        timezone: "",
+        currency: "",
+        taxId: "",
+        registeredAddress: "",
+      });
+
+      logger.info("Admin settings document seeded with defaults on first access");
+    }
+
+    return sendTsRestSuccess(res, 200, {
+      success: true,
+      message: "Admin settings fetched successfully",
+      data: settings,
+    });
+  },
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ADMIN SETTINGS — UPDATE
+// Updates the 7 editable business-profile fields in a single atomic operation.
+// legalName and tradingName are intentionally excluded — they are static and
+// can only be set at seeding/creation time, never overwritten via this route.
+// ─────────────────────────────────────────────────────────────────────────────
+export const updateAdminSettings = tryCatchWrapper(
+  async (req: Request, res: Response) => {
+    const {
+      supportEmail,
+      supportPhone,
+      country,
+      timezone,
+      currency,
+      taxId,
+      registeredAddress,
+    } = req.body;
+
+    // findOneAndUpdate with upsert: true guarantees exactly one settings document
+    const updatedSettings = await AdminSettings.findOneAndUpdate(
+      {}, // match any — there will only ever be one document
+      {
+        $set: {
+          supportEmail,
+          supportPhone,
+          country,
+          timezone,
+          currency,
+          taxId,
+          registeredAddress,
+        },
+      },
+      {
+        new: true,       // return the updated document
+        upsert: true,    // create if not yet present
+        runValidators: true,
+        lean: true,
+      },
+    );
+
+    // 🌟 LIVE LOG INJECTION
+    await ActivityLog.create({
+      label: `Business profile settings were updated by admin`,
+      variant: "info",
+      user: (req as any).user?._id,
+    });
+
+    logger.info("Admin business profile settings updated successfully");
+
+    return sendTsRestSuccess(res, 200, {
+      success: true,
+      message: "Settings saved successfully",
+      data: updatedSettings,
     });
   },
 );
