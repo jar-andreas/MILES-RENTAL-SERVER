@@ -1,3 +1,4 @@
+import ActivityLog from "../models/activity.log.model.js";
 import { Request, Response } from "express";
 import Booking from "../models/booking.model.js";
 import Car from "../models/car.model.js";
@@ -19,11 +20,8 @@ export const createBooking = tryCatchWrapper(
     } = req.body;
 
     const userId = req.session.userId;
-    // 1. Fetch the Car Details first
-    const carDetails = await Car.findById(car);
-    if (!carDetails) {
-      return sendTsRestError(res, 404, "Vehicle not found");
-    }
+
+    // 1. Core structural field validation
     if (
       !car ||
       !pickupLocation ||
@@ -38,6 +36,12 @@ export const createBooking = tryCatchWrapper(
       );
     }
 
+    // 2. Fetch the Car Details first
+    const carDetails = await Car.findById(car);
+    if (!carDetails) {
+      return sendTsRestError(res, 404, "Vehicle not found");
+    }
+
     const pickUp = new Date(pickupDate);
     const toReturn = new Date(returnDate);
 
@@ -49,19 +53,15 @@ export const createBooking = tryCatchWrapper(
       return sendTsRestError(res, 400, "Return date must be after pickup date");
     }
 
-    const DRIVERFEE = 25;
-    const SERVICEFEE = 10;
+    // 3. Define clean business-logic fee rules
+    const calculatedDriverFee = driverOption === true ? 25000 * totalDays : 0;
+    const flatServiceFee = 10000; // Flat fee per rental, not multiplied by days
 
-    // Pull the price per day directly from the database result
-    let totalPrice = totalDays * (carDetails.pricePerDay + SERVICEFEE);
+    // 4. Calculate total price dynamically
+    const carRentalTotal = carDetails.pricePerDay * totalDays;
+    const totalPrice = carRentalTotal + flatServiceFee + calculatedDriverFee;
 
-    // Optional: Add driver fee if selected
-    if (driverOption === true) {
-      totalPrice += DRIVERFEE * totalDays; // $25 extra per day for a driver
-    }
-
-    // Availability Check
-    // Look for existing bookings for this car that overlap with the new dates
+    // 5. Availability Check (Overlapping dates)
     const existingBooking = await Booking.findOne({
       car,
       bookingStatus: { $nin: ["Cancelled", "Completed"] },
@@ -76,6 +76,7 @@ export const createBooking = tryCatchWrapper(
       );
     }
 
+    // 6. Create Booking and pass ALL required attributes explicitly
     const booking = await Booking.create({
       user: userId,
       car,
@@ -86,8 +87,17 @@ export const createBooking = tryCatchWrapper(
       pickupTime,
       returnTime,
       totalDays,
-      totalPrice,
       driverOption,
+      driverFee: calculatedDriverFee,
+      serviceFee: flatServiceFee,
+      totalPrice,
+    });
+
+    // 🌟 LIVE LOG INJECTION (Uses verified local userId from session storage)
+    await ActivityLog.create({
+      label: `New reservation placed for a ${carDetails.brand} ${carDetails.modelName} - Ref: #${booking._id.toString().slice(-6).toUpperCase()}`,
+      variant: "info",
+      user: userId,
     });
 
     return sendTsRestSuccess(res, 201, {
@@ -153,7 +163,7 @@ export const cancelBooking = tryCatchWrapper(
     if (!booking) {
       return sendTsRestError(res, 404, "Booking not found");
     }
-    //option to not be able to cancel a trip that has already confrimed or completed
+    //option to not be able to cancel a trip that has already confirmed or completed
     if (
       booking.bookingStatus !== "Pending" &&
       booking.bookingStatus !== "Confirmed"
@@ -175,14 +185,27 @@ export const cancelBooking = tryCatchWrapper(
     if (differenceInTime > twentyFourHours) {
       return sendTsRestError(res, 400, "Cancellation window has expired");
     }
+
     booking.bookingStatus = "Cancelled";
     if (booking.bookingStatus === "Cancelled" && booking.car) {
-      await Car.findByIdAndUpdate(booking.car, { status: "available" });
+      await Car.findByIdAndUpdate(
+        booking.car,
+        { status: "available" },
+        { runValidators: true },
+      );
       logger.info(
         `Vehicle bound to booking ${id} has been successfully updated to 'available'.`,
       );
     }
     await booking.save();
+
+    // 🌟 LIVE LOG INJECTION (Uses verified local userId from session storage)
+    await ActivityLog.create({
+      label: `Customer cancelled pending reservation request #${id.slice(-6)}`,
+      variant: "warning",
+      user: userId,
+    });
+
     return sendTsRestSuccess(res, 200, {
       message: "Booking cancelled successfully",
       booking,

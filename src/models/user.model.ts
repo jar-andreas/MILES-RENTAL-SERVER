@@ -9,7 +9,6 @@ export interface IUser extends Document {
   emailVerified: boolean;
   phone: string;
   role: "client" | "admin";
-  isOnboarded: boolean;
 }
 
 const UserSchema = new Schema<IUser>(
@@ -48,10 +47,6 @@ const UserSchema = new Schema<IUser>(
     phone: {
       type: String,
       trim: true,
-    },
-    isOnboarded: {
-      type: Boolean,
-      default: false,
     },
     role: {
       type: String,

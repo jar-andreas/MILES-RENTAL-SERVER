@@ -105,6 +105,7 @@ DriverSchema.index({ rating: 1 });
 DriverSchema.index({ trips: 1 });
 DriverSchema.index({ status: 1 });
 
-const Driver = mongoose.model<DriverInfo>("Driver", DriverSchema);
+const Driver =
+  mongoose.models.Driver || mongoose.model<DriverInfo>("Driver", DriverSchema);
 
 export default Driver;
