@@ -218,6 +218,7 @@ export const getSingleBooking = tryCatchWrapper(
     const { id } = req.params;
     const userId = req.session.userId;
 
+
     const booking = await Booking.findOne({
       _id: id,
       user: userId,
@@ -225,7 +226,9 @@ export const getSingleBooking = tryCatchWrapper(
       .populate("car")
       .populate("user", "firstName lastName email")
       .populate("driver")
+      .populate("payment", "paymentMethod amount")
       .lean();
+
 
     if (!booking) {
       return sendTsRestSuccess(res, 404, {
