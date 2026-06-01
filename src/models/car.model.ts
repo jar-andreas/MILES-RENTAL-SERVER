@@ -1,6 +1,5 @@
 import mongoose, { Schema, Document } from "mongoose";
 
-
 export interface UserCar extends Document {
   booking: mongoose.Types.ObjectId;
   brand: string;
@@ -43,8 +42,8 @@ const CarSchema = new Schema<UserCar>(
   {
     booking: {
       type: Schema.Types.ObjectId,
-      ref: "Booking", 
-      required: true
+      ref: "Booking",
+      required: true,
     },
 
     brand: {
