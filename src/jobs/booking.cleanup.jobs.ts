@@ -68,7 +68,7 @@ export const startCleanupPendingBookingsJob = (): void => {
           { $set: { status: "available" } },
         );
         logger.info(
-          `Car release: Freed ${expiredActiveBookings.length} car(s) with expired dropOffDate.`,
+          `Car release: Freed ${expiredActiveBookings.length} car(s) with expired returnDate.`,
         );
       }
 
