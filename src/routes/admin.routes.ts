@@ -9,15 +9,13 @@ import {
   getDashboardStats,
 } from "../controllers/admin.controller.js";
 import { validateFormData } from "../middleware/formValidate.js";
-import {
-  validateAdminNewBookingSchema,
-  validateAdminSettingsSchema,
-} from "../lib/schemaValidation.js";
+import { validateAdminNewBookingSchema } from "../lib/schemaValidation.js";
 import { customRateLimiter } from "../middleware/rateLimit.middelware.js";
 import { getAllUsers } from "../controllers/customer.controller.js";
 import { cacheMiddleware, clearCache } from "../middleware/cache.middleware.js";
 import { createCar, getAllCarsAdmin } from "../controllers/fleet.controller.js";
 import { uploadMemory } from "../middleware/upload.middleware.js";
+import { deleteAdmin, updateAdmin } from "../controllers/setting.controller.js";
 
 const router = Router();
 
@@ -105,26 +103,7 @@ router.post(
   clearCache("all_cars"),
 );
 
-// // ─────────────────────────────────────────────────────────────────────────────
-// // ADMIN SETTINGS ROUTES
-// // GET  /admin/settings         — fetch current business profile
-// // PUT  /admin/settings         — update / upsert business profile
-// // ─────────────────────────────────────────────────────────────────────────────
-// router.get(
-//   "/settings",
-//   isAuthenticated,
-//   isAdmin,
-//   cacheMiddleware("admin_settings", 3600),
-//   getAdminSettings,
-// );
-
-// router.put(
-//   "/settings",
-//   isAuthenticated,
-//   isAdmin,
-//   validateFormData(validateAdminSettingsSchema),
-//   updateAdminSettings,
-//   clearCache("admin_settings"),
-// );
+router.patch("/update-admin", isAuthenticated, isAdmin, updateAdmin);
+router.delete("/delete-workspace", isAuthenticated, isAdmin, deleteAdmin);
 
 export default router;
