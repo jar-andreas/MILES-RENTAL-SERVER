@@ -7,8 +7,6 @@ import {
   getAdminBookings,
   getAdminSingleBooking,
   getDashboardStats,
-  getAdminSettings,
-  updateAdminSettings,
 } from "../controllers/admin.controller.js";
 import { validateFormData } from "../middleware/formValidate.js";
 import {
@@ -107,26 +105,26 @@ router.post(
   clearCache("all_cars"),
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ADMIN SETTINGS ROUTES
-// GET  /admin/settings         — fetch current business profile
-// PUT  /admin/settings         — update / upsert business profile
-// ─────────────────────────────────────────────────────────────────────────────
-router.get(
-  "/settings",
-  isAuthenticated,
-  isAdmin,
-  cacheMiddleware("admin_settings", 3600),
-  getAdminSettings,
-);
+// // ─────────────────────────────────────────────────────────────────────────────
+// // ADMIN SETTINGS ROUTES
+// // GET  /admin/settings         — fetch current business profile
+// // PUT  /admin/settings         — update / upsert business profile
+// // ─────────────────────────────────────────────────────────────────────────────
+// router.get(
+//   "/settings",
+//   isAuthenticated,
+//   isAdmin,
+//   cacheMiddleware("admin_settings", 3600),
+//   getAdminSettings,
+// );
 
-router.put(
-  "/settings",
-  isAuthenticated,
-  isAdmin,
-  validateFormData(validateAdminSettingsSchema),
-  updateAdminSettings,
-  clearCache("admin_settings"),
-);
+// router.put(
+//   "/settings",
+//   isAuthenticated,
+//   isAdmin,
+//   validateFormData(validateAdminSettingsSchema),
+//   updateAdminSettings,
+//   clearCache("admin_settings"),
+// );
 
 export default router;

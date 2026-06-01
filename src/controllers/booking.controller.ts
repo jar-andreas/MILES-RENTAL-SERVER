@@ -224,6 +224,7 @@ export const getSingleBooking = tryCatchWrapper(
     })
       .populate("car")
       .populate("user", "firstName lastName email")
+      .populate("driver")
       .lean();
 
     if (!booking) {
