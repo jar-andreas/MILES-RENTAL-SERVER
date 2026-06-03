@@ -49,7 +49,7 @@ setupGlobalErrorHandlers();
 // CORS configuration
 const allowedOrigins = [
   env.CLIENT_URL,
-  "https://milescar-rental-vercel.app",
+  "https://milescar-rental.vercel.app",
   "http://localhost:4500",
 ];
 if (env.NODE_ENV === "production" && env.CLIENT_URL) {
