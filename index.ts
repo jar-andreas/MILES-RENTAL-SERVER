@@ -49,7 +49,7 @@ setupGlobalErrorHandlers();
 // CORS configuration
 const allowedOrigins = [
   env.CLIENT_URL,
-  "https://earthling-occupant-vagrancy.ngrok-free.dev",
+  "local",
   "http://localhost:4500",
 ];
 if (env.NODE_ENV === "production" && env.CLIENT_URL) {
