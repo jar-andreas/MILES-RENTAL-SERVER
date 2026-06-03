@@ -439,20 +439,27 @@ export const getDashboardStats = tryCatchWrapper(
     const startDate = req.query.startDate as string | undefined;
     const endDate = req.query.endDate as string | undefined;
 
+    // Create a fresh anchor point at midnight UTC/Local cleanly
     let startFilterDate = new Date();
-    startFilterDate.setHours(0, 0, 0, 0); // Reset time to midnight for clean daily math
-    const endFilterDate = new Date();
+    startFilterDate.setHours(0, 0, 0, 0);
+    const endFilterDate = new Date(); // Current exact moment
 
     if (range === "7d") {
-      startFilterDate.setDate(startFilterDate.getDate() - 7);
+      // Use getTime() math to avoid tricky calendar month-boundary bugs
+      startFilterDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      startFilterDate.setHours(0, 0, 0, 0);
     } else if (range === "30d" || !range) {
-      startFilterDate.setDate(startFilterDate.getDate() - 30); // Default to last 30 days if there is no query
+      startFilterDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      startFilterDate.setHours(0, 0, 0, 0);
     } else if (range === "today") {
-      // Stays at today's midnight boundary
+      startFilterDate.setHours(0, 0, 0, 0);
     } else if (range === "custom" && startDate && endDate) {
-      // Convert incoming custom date strings into valid Date objects
       startFilterDate = new Date(startDate);
-      endFilterDate.setTime(new Date(endDate).getTime());
+      startFilterDate.setHours(0, 0, 0, 0);
+
+      const customEnd = new Date(endDate);
+      customEnd.setHours(23, 59, 59, 999); // Fixes the single-day midnight trap
+      endFilterDate.setTime(customEnd.getTime());
     }
 
     // -------------------------------------------------------------------------
@@ -490,7 +497,6 @@ export const getDashboardStats = tryCatchWrapper(
         date: cleanDate,
         amount: payment.amount,
         method: payment.paymentMethod,
-        // Simple inline checks: returns the amount if it matches, otherwise 0
         paystackAmount:
           payment.paymentMethod === "Pay_with_Paystack" ? payment.amount : 0,
         bankTransferAmount:
@@ -530,10 +536,10 @@ export const getDashboardStats = tryCatchWrapper(
     const fleetUtilizationRate =
       totalVehicleCounts > 0
         ? Math.round(
-          ((fleetDistribution.booked + fleetDistribution.reserved) /
-            totalVehicleCounts) *
-          100,
-        )
+            ((fleetDistribution.booked + fleetDistribution.reserved) /
+              totalVehicleCounts) *
+              100,
+          )
         : 0;
 
     // -------------------------------------------------------------------------
@@ -541,6 +547,8 @@ export const getDashboardStats = tryCatchWrapper(
     // -------------------------------------------------------------------------
     const liveRevenueOverviewList = await Booking.find({
       bookingStatus: { $in: ["Pending", "Confirmed", "Ongoing"] },
+      // 🌟 FIXED: Filter recent operations by the selected timeline range
+      createdAt: { $gte: startFilterDate, $lte: endFilterDate },
     })
       .populate("user", "firstName lastName")
       .populate("car", "brand modelName")
@@ -553,6 +561,8 @@ export const getDashboardStats = tryCatchWrapper(
     // -------------------------------------------------------------------------
     const performanceBookings = await Booking.find({
       bookingStatus: { $ne: "Cancelled" },
+      // 🌟 FIXED: Rank vehicle metrics exclusively within the filtered range
+      createdAt: { $gte: startFilterDate, $lte: endFilterDate },
     })
       .populate("car", "brand modelName images")
       .lean();
@@ -594,7 +604,10 @@ export const getDashboardStats = tryCatchWrapper(
     // -------------------------------------------------------------------------
     // SECTION 6: LIVE RECENT ACTIVITIES FEED
     // -------------------------------------------------------------------------
-    const liveActivityFeed = await ActivityLog.find({})
+    const liveActivityFeed = await ActivityLog.find({
+      // 🌟 OPTIONAL: Filter your activity logs contextually by time if needed
+      createdAt: { $gte: startFilterDate, $lte: endFilterDate },
+    })
       .populate("user", "firstName lastName")
       .sort({ createdAt: -1 })
       .limit(5)
@@ -640,7 +653,7 @@ export const getDashboardStats = tryCatchWrapper(
     }
     if (availableCount > 0) {
       dynamicAlertsList.push({
-        id: "high_availability", // ✅ Patched to avoid tracking conflicts
+        id: "high_availability",
         title: `${availableCount} vehicles are currently unrented`,
         details:
           "Action required: Review active marketing promos or reach out to past customers to boost utilization.",
@@ -655,9 +668,7 @@ export const getDashboardStats = tryCatchWrapper(
       message: "Dashboard analytics calculated successfully",
       body: {
         summaryCards: {
-          activeBookings: {
-            value: totalBookingCount,
-          },
+          activeBookings: { value: totalBookingCount },
           revenue: {
             value: revenueAmount,
             formattedValue: `₦${(revenueAmount / 1000000).toFixed(1)}M`,
