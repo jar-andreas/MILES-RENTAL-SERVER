@@ -46,12 +46,15 @@ app.set("trust proxy", 1);
 //global error handler - node js process
 setupGlobalErrorHandlers();
 
+// 2. Normalize and strip trailing slashes securely
+const cleanOrigin = env.CLIENT_URL ? env.CLIENT_URL.replace(/\/$/, "") : "";
+
 // CORS configuration
 const allowedOrigins = [
-  env.CLIENT_URL,
+  cleanOrigin,
   "https://milescar-rental.vercel.app",
   "http://localhost:4500",
-];
+].filter(Boolean);
 if (env.NODE_ENV === "production" && env.CLIENT_URL) {
   if (!allowedOrigins.includes(env.CLIENT_URL)) {
     allowedOrigins.push(env.CLIENT_URL);
