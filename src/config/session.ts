@@ -21,6 +21,7 @@ const createSessionStore = () => {
 
 // Session middleware configuration
 export const createSessionMiddleware = () => {
+  const isProd = env.NODE_ENV === "production";
   return session({
     secret: env.SESSION_SECRET,
     name: "sessionId", // Custom cookie name to avoid default 'connect.sid'
@@ -30,8 +31,8 @@ export const createSessionMiddleware = () => {
     cookie: {
       maxAge: SESSION_MAX_AGE,
       httpOnly: true, // Prevent XSS attacks
-      secure: env.NODE_ENV === "production", // HTTPS only in production
-      sameSite: "lax", // CSRF protection
+      secure: isProd, // HTTPS only in production
+      sameSite: isProd ? "none" : "lax", // CSRF protection
     },
     rolling: true, // Refresh expiration on every response
   });

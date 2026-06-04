@@ -413,3 +413,51 @@ export const validateDriverSchema = z.object({
     .min(0, { message: "Trips cannot be negative" })
     .default(0),
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ADMIN BUSINESS PROFILE SETTINGS SCHEMA
+// legalName and tradingName are static — excluded from updates intentionally.
+// ─────────────────────────────────────────────────────────────────────────────
+export const validateAdminSettingsSchema = z.object({
+  supportEmail: z
+    .string({ message: "Support email is required" })
+    .trim()
+    .toLowerCase()
+    .email({ message: "Invalid support email address" }),
+
+  supportPhone: z
+    .string({ message: "Support phone is required" })
+    .trim()
+    .min(1, { message: "Support phone is required" })
+    .refine(
+      (num) => /^\+\d{10,15}$/.test(num),
+      "Support phone must be in international format e.g. +2347000000000",
+    ),
+
+  country: z
+    .string({ message: "Country is required" })
+    .trim()
+    .min(2, { message: "Country is required" }),
+
+  timezone: z
+    .string({ message: "Timezone is required" })
+    .trim()
+    .min(2, { message: "Timezone is required" }),
+
+  currency: z
+    .string({ message: "Currency is required" })
+    .trim()
+    .min(2, { message: "Currency is required" }),
+
+  taxId: z
+    .string({ message: "Tax ID is required" })
+    .trim()
+    .min(2, { message: "Tax ID must be at least 2 characters" })
+    .max(100, { message: "Tax ID is too long" }),
+
+  registeredAddress: z
+    .string({ message: "Registered address is required" })
+    .trim()
+    .min(5, { message: "Registered address must be at least 5 characters" })
+    .max(500, { message: "Registered address is too long" }),
+});

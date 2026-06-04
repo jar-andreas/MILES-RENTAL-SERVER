@@ -15,6 +15,7 @@ import { getAllUsers } from "../controllers/customer.controller.js";
 import { cacheMiddleware, clearCache } from "../middleware/cache.middleware.js";
 import { createCar, getAllCarsAdmin } from "../controllers/fleet.controller.js";
 import { uploadMemory } from "../middleware/upload.middleware.js";
+import { deleteAdmin, updateAdmin } from "../controllers/setting.controller.js";
 
 const router = Router();
 
@@ -101,5 +102,8 @@ router.post(
   clearCache("admin_fleet_dashboard"), // 🧼 5. Wipe cache tags so updates reflect instantly
   clearCache("all_cars"),
 );
+
+router.patch("/update-admin", isAuthenticated, isAdmin, updateAdmin);
+router.delete("/delete-workspace", isAuthenticated, isAdmin, deleteAdmin);
 
 export default router;
