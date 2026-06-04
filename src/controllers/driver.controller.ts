@@ -67,54 +67,6 @@ export const getAllDrivers = tryCatchWrapper(
   },
 );
 
-export const getDriverById = tryCatchWrapper(
-  async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const driver = await Driver.findById(id);
-    if (!driver) {
-      return sendTsRestError(res, 404, "Driver not found");
-    }
-    return sendTsRestSuccess(res, 200, {
-      success: true,
-      message: "Driver retrieved successfully",
-      driver,
-    });
-  },
-);
-
-export const updateDriver = tryCatchWrapper(
-  async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const updateData = req.body;
-    const driver = await Driver.findByIdAndUpdate(id, updateData, {
-      new: true,
-    });
-    if (!driver) {
-      return sendTsRestError(res, 404, "Driver not found");
-    }
-    return sendTsRestSuccess(res, 200, {
-      success: true,
-      message: "Driver updated successfully",
-      driver,
-    });
-  },
-);
-
-export const deleteDriver = tryCatchWrapper(
-  async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const driver = await Driver.findByIdAndDelete(id);
-    if (!driver) {
-      return sendTsRestError(res, 404, "Driver not found");
-    }
-    return sendTsRestSuccess(res, 200, {
-      success: true,
-      message: "Driver deleted successfully",
-      driver,
-    });
-  },
-);
-
 export const getAllDriver = tryCatchWrapper(
   async (req: Request, res: Response) => {
     const page = Number(req.query.page) || 1;
