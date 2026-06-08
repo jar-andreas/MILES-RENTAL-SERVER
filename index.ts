@@ -94,11 +94,12 @@ app.use(createExpressLogger());
 app.use(cors(corsOptions));
 app.use((req: Request, res: Response, next: NextFunction) => {
   // Allow credentials
-  res.header(
-    "Access-Control-Allow-Origin",
-    "http://localhost:4500",
-    "https://milescar-rental.vercel.app",
-  );
+  const origin = req.headers.origin;
+
+  // If the request origin matches our allowed list, reflect it back cleanly
+  if (origin && allowedOrigins.includes(origin)) {
+    res.header("Access-Control-Allow-Origin", origin);
+  }
   res.header("Access-Control-Allow-Credentials", "true");
   // Handle preflight
   if (req.method === "OPTIONS") {
