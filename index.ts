@@ -52,8 +52,6 @@ const cleanOrigin = env.CLIENT_URL ? env.CLIENT_URL.replace(/\/$/, "") : "";
 // CORS configuration
 const allowedOrigins = [
   cleanOrigin,
-  "https://milescar-rental.vercel.app",
-  "http://localhost:4500",
 ];
 if (env.NODE_ENV === "production" && env.CLIENT_URL) {
   if (!allowedOrigins.includes(env.CLIENT_URL)) {
@@ -92,26 +90,6 @@ app.use(globalLimiter);
 //Pino HTTP middleware for request logging
 app.use(createExpressLogger());
 app.use(cors(corsOptions));
-app.use((req: Request, res: Response, next: NextFunction) => {
-  // Allow credentials
-  const origin = req.headers.origin;
-
-  // If the request origin matches our allowed list, reflect it back cleanly
-  if (origin && allowedOrigins.includes(origin)) {
-    res.header("Access-Control-Allow-Origin", origin);
-  }
-  res.header("Access-Control-Allow-Credentials", "true");
-  // Handle preflight
-  if (req.method === "OPTIONS") {
-    res.header(
-      "Access-Control-Allow-Methods",
-      "GET, POST, PATCH, DELETE, OPTIONS",
-    );
-    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    return res.status(204).end();
-  }
-  next();
-});
 
 // Session middleware (after CORS, before body parsers)
 app.use(createSessionMiddleware());
