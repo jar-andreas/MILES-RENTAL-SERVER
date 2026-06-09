@@ -52,6 +52,7 @@ const cleanOrigin = env.CLIENT_URL ? env.CLIENT_URL.replace(/\/$/, "") : "";
 // CORS configuration
 const allowedOrigins = [
   cleanOrigin,
+  "http://localhost:4500",
 ];
 if (env.NODE_ENV === "production" && env.CLIENT_URL) {
   if (!allowedOrigins.includes(env.CLIENT_URL)) {
@@ -74,8 +75,8 @@ const corsOptions: cors.CorsOptions = {
     "Content-Type",
     "Authorization",
     "ngrok-skip-browser-warning",
-    "Access-Control-Allow-Origin",
-    "Access-Control-Allow-Credentials",
+    // "Access-Control-Allow-Origin",
+    // "Access-Control-Allow-Credentials",
   ],
   exposedHeaders: [
     "Content-Range",
@@ -85,11 +86,11 @@ const corsOptions: cors.CorsOptions = {
   ],
 };
 
-//rate limit
-app.use(globalLimiter);
-//Pino HTTP middleware for request logging
-app.use(createExpressLogger());
 app.use(cors(corsOptions));
+//rate limit and Pino HTTP middleware for request logging
+app.use(globalLimiter);
+app.use(createExpressLogger());
+
 
 // Session middleware (after CORS, before body parsers)
 app.use(createSessionMiddleware());
