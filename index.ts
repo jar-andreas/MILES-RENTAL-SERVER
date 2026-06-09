@@ -94,6 +94,7 @@ app.use(createExpressLogger());
 app.use(cors(corsOptions));
 app.use((req: Request, res: Response, next: NextFunction) => {
   // Allow credentials
+  res.header("Access-Control-Allow-Origin", "https://milescar-rental.vercel.app");
   res.header("Access-Control-Allow-Credentials", "true");
   // Handle preflight
   if (req.method === "OPTIONS") {
